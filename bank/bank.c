@@ -3,6 +3,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
+
+#define MAX_ARG1_SIZE 12 //cmd
+#define MAX_ARG2_SIZE 251 //usrname
+#define MAX_ARG3_SIZE 6 //pin or amt
+#define MAX_ARG4_SIZE 6 //unsigned int max 65535
+#define MAX_LINE_SIZE 1001
 
 Bank* bank_create()
 {
@@ -58,6 +65,22 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len)
 void bank_process_local_command(Bank *bank, char *command, size_t len)
 {
     // TODO: Implement the bank's local commands
+    //sscanf()....
+    int n;
+    
+    if (){
+    
+    }else if(){
+
+    }else if(){
+
+    }else{
+        //error
+    }
+    //create-user <user-name> <pin> <balance>
+    //deposit <user-name> <amt>
+    //balance <user-name>
+        
 }
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len)
@@ -70,7 +93,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
 	 * it back to the ATM before printing it to stdout.
 	 */
 
-	/*
+    /*	
     char sendline[1000];
     command[len]=0;
     sprintf(sendline, "Bank got: %s", command);
