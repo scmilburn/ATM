@@ -116,7 +116,30 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
             strncpy(arg2, arg2buff, strlen(arg2buff));
         }
         
+        //valid user name
+        if (!valid_user(arg2)){
+            printf("Usage: create-user <user-name> <pin> <balance>\n");
+            return;
+        }
         
+        //user exists
+        if (user_exists(arg2)){
+            printf("Error: user %d already exists", arg2);
+            return;
+        }
+        
+        //pin len max
+        if (strlen(arg3buff) != 4){
+            printf("Usage: create-user <user-name> <pin> <balance>\n");
+            return;
+        }else{
+            strncpy(arg3, arg3buff, strlen(arg3buff));    
+        } 
+        
+        if(!valid_pin(arg3)){
+            printf("Usage: create-user <user-name> <pin> <balance>\n");
+            return;
+        }
         
      
 
@@ -170,6 +193,31 @@ int valid_user(char *user_name){
         }else if(user_name[i] > 90 || user_name[i] < 97){
             return FALSE;
         }
+    }
+    return TRUE;
+}
+
+int user_exists(char *user_name){
+    //check if they have a card
+    //char fname = <user-name>.card 
+
+    if (access(fname, F_OK) != -1){
+        return TRUE;
+    }else{
+        return FALSE;
+    }
+}
+
+int valid_pin(const char *pin){
+    while(*pin){
+        if (!isdigit(*pin++)){
+            return FALSE;
+        }
+    }   
+    
+    long d = strtol(pin, NULL, 10);
+    if (d < 0 || d > 9999){
+        return FALSE;
     }
     return TRUE;
 }
