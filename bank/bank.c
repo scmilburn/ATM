@@ -5,11 +5,13 @@
 #include <unistd.h>
 #include <limits.h>
 
-#define MAX_ARG1_SIZE 12 //cmd
-#define MAX_ARG2_SIZE 251 //usrname
-#define MAX_ARG3_SIZE 6 //pin or amt
-#define MAX_ARG4_SIZE 6 //unsigned int max 65535
-#define MAX_LINE_SIZE 1001
+#define MAX_ARG1_LEN 12 //cmd
+#define MAX_ARG2_LEN 251 //usrname
+#define MAX_ARG3_LEN 6 //pin or amt
+#define MAX_ARG4_LEN 6 //unsigned int max 65535
+#define MAX_LINE_LEN 1001
+#define TRUE 1;
+#define FALSE 0;
 
 Bank* bank_create()
 {
@@ -64,23 +66,74 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len)
 
 void bank_process_local_command(Bank *bank, char *command, size_t len)
 {
-    // TODO: Implement the bank's local commands
-    //sscanf()....
-    int n;
+    char arg1buff[MAX_LINE_LEN], arg2buff[MAX_LINE_LEN], arg3buff[MAX_LINE_LEN], arg4buff[MAX_LINE_LEN];
     
-    if (){
-    
-    }else if(){
-
-    }else if(){
-
-    }else{
-        //error
+    //full command too long
+    if (strlen(command) >= MAX_LINE_SIZE){
+        printf("Invalid command\n");
+        return;
     }
+       
+    sscanf(command, "%s %s %s %s", arg1buff, arg2buff, arg3buff, arg4buff);
+    
+    //null input
+    if (strlen(arg1) < 1 || arg1 == NULL){
+        printf("Invalid command\n");
+        return;
+    }
+
+    //check if args are correct len
+    if (strlen(arg1buff) > MAX_ARG1_LEN){
+        printf("Invalid command\n");
+        return;
+    }else{
+        strncpy(arg1, arg1buff, MAX_ARG1_LEN);
+    }      
+    
+    // BRANCHING BASED ON ARG1
+
     //create-user <user-name> <pin> <balance>
-    //deposit <user-name> <amt>
-    //balance <user-name>
+    if (strcmp(arg1, "create-user") == 0){
         
+        //null
+        if (!arg2buff || !arg3buff || !arg4buff){
+            printf("Usage: create-user <user-name> <pin> <balance>\n");
+            return;        
+        }
+        
+        //empty
+        if (strlen(arg2buff) < 1 || strlen(arg3buff) < 1 || strlen(arg4buff) < 1){ 
+            printf("Usage: create-user <user-name> <pin> <balance>\n");
+            return;
+        }
+        
+        //username max 
+        if (strlen(arg2buff) > 250){
+            printf("Usage: create-user <user-name> <pin> <balance>\n");
+            return;
+        }else{
+            strncpy(arg2, arg2buff, strlen(arg2buff));
+        }
+        
+        
+        
+     
+
+
+
+        
+    }
+    //deposit <user-name> <amt> 
+    else if (strcmp(arg1, "deposit") == 0){
+
+    }
+    //balance <user-name>
+    else if (strcmp(arg1, "balance") == 0){
+    
+    }else{
+        printf("Invalid command\n");
+        return;
+    }         
 }
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len)
@@ -101,4 +154,21 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
     printf("Received the following:\n");
     fputs(command, stdout);
 	*/
+}
+
+int valid_user(char *user_name){
+    //have already check if null
+    if(!user_name){
+        return FALSE;
+    }
+    
+    int i;
+    for (i = 0; i < strlen(user_name); i++){
+        if(user_name[i] < 65 || user_name[i] > 122){
+            return FALSE;
+        }else if(user_name[i] > 90 || user_name[i] < 97){
+            return FALSE;
+        }
+    }
+    return TRUE;
 }
