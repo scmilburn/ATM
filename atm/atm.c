@@ -64,8 +64,10 @@ void atm_process_command(ATM *atm, char *command)
 	 * user's command to the bank, receives a message from the
 	 * bank, and then prints it to stdout.
 	 */
-
-	/*
+    
+    //checking valid command
+    
+    
     char recvline[10000];
     int n;
 
@@ -73,5 +75,5 @@ void atm_process_command(ATM *atm, char *command)
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
     fputs(recvline,stdout);
-	*/
+
 }

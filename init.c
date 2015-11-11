@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <openssl/aes.h>
+#include <openssl/rsa.h>
 
 #define KEYLENGTH 32
 
