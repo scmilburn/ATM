@@ -34,6 +34,7 @@ int main(int argc, char**argv)
 
        if(FD_ISSET(0, &fds))
        {
+	   printf("listening for local commands only\n");
            fgets(sendline, 10000,stdin);
            bank_process_local_command(bank, sendline, strlen(sendline));
            printf("%s", prompt);
@@ -41,6 +42,7 @@ int main(int argc, char**argv)
        }
        else if(FD_ISSET(bank->sockfd, &fds))
        {
+	   printf("socket successfully created\n");
            n = bank_recv(bank, recvline, 10000);
            bank_process_remote_command(bank, recvline, n);
        }
