@@ -162,7 +162,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         }
         
         //MAKE USER ACCOUNT/CARD
-        //
+        //NEED TO FIGURE OUT CARD STRUCTURE AND ENCRYPTION
 
         printf("Created user %s\n", arg2);
         return; 
@@ -219,14 +219,17 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         
         strncpy(arg3, arg3buff, strlen(arg3buff));
         
-        //valid balance
+        //valid balance if able to deposit
         if (!valid_balance){
             printf("Usage: deposit <user-name> <amt>\n");
             return;      
         }
+
+        //check that new deposit won't overflow the balance
         
         //CHANGE THE AMOUNT IN BANK
-        
+        //figure out how to communicate with bank storage and make card with new balance        
+
         printf("$%s added to %s's account\n", arg3, arg2);
         return;
     }
@@ -336,6 +339,7 @@ int valid_balance(char *bal){
     }
     return TRUE;
 }
+
 int all_digits(char *number){
     int i;
     for(i=0; i<strlen(str); i++){
