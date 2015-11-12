@@ -3,6 +3,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <regex.h>
+
+int session_token=0;
 
 ATM* atm_create()
 {
@@ -67,13 +70,56 @@ void atm_process_command(ATM *atm, char *command)
     
     //checking valid command
     
-    
-    char recvline[10000];
-    int n;
+	//printf("%s\n",command);
+	char *str,*str1;
+	str=strtok(command,"\n");
+	//printf("first token is %s\n",t);
+	if(strcmp(str,"balance")==0){
+		printf("asking about balance\n");
+		if(session_token==0){
+			printf("there is not currently a session\n");
+		}
+	}else if(strcmp(str,"end-session")==0){
+		printf("asking to end session\n");
+		if(!session_token){
+			printf("No user logged in\n");
+		}else if(session_token){
+			printf("User logged out\n");
+			session_token = 0;
+		}
+	}else{
+		str1=strtok(str," ");
+		if(strcmp(str1,"begin-session")==0){
+			if(session_token==1){
+				printf("A user is already logged in\n");
+			}else if(session_token==0){
+				str1 = strtok(NULL," ");
+				printf("asking to begin a session with %s\n",str1);
+				//read from card file and ask for PIN here
+				session_token = 1;
+			}
+		}else if(strcmp(str1,"withdraw")==0){
+			printf("asking to withdraw\n");
+			if(session_token==0){
+				printf("No user logged in\n");
+			}else if(session_token==1){
+				str1 = strtok(NULL," ");
+				printf("wants to withdraw %s",str1);
+			}
+		}
+	}
+    	
 
-    atm_send(atm, command, strlen(command));
-    n = atm_recv(atm,recvline,10000);
-    recvline[n]=0;
-    fputs(recvline,stdout);
+	//printf("end of function the token is %d\n",session_token);
+
+
+
+    	/*char recvline[10000];
+    	int n;
+    	printf("sending %s\n",command);
+    	atm_send(atm, command, strlen(command));
+    	n = atm_recv(atm,recvline,10000);
+    	recvline[n]=0;
+    	fputs(recvline,stdout);*/
 
 }

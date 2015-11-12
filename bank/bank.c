@@ -70,6 +70,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
     char arg1[MAX_ARG1_LEN], arg2[MAX_ARG2_LEN], arg3[MAX_ARG3_LEN], arg4[MAX_ARG4_LEN];
     char arg1buff[MAX_LINE_LEN], arg2buff[MAX_LINE_LEN], arg3buff[MAX_LINE_LEN], arg4buff[MAX_LINE_LEN];
     
+
     //full command too long
     if (strlen(command) >= MAX_LINE_SIZE){
         printf("Invalid command\n");
@@ -93,6 +94,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
     }      
     
     // MAIN BRANCHING BASED ON ARG1
+
 
     //create-user <user-name> <pin> <balance>
     if (strcmp(arg1, "create-user") == 0){
@@ -273,14 +275,14 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
 	 * it back to the ATM before printing it to stdout.
 	 */
 
-    /*	
+    	
     char sendline[1000];
     command[len]=0;
     sprintf(sendline, "Bank got: %s", command);
     bank_send(bank, sendline, strlen(sendline));
     printf("Received the following:\n");
     fputs(command, stdout);
-	*/
+	
 }
 
 int valid_user(char *user_name){
