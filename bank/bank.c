@@ -66,6 +66,7 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len)
 
 void bank_process_local_command(Bank *bank, char *command, size_t len)
 {
+    //creating larger buffers to prevent overflow
     char arg1[MAX_ARG1_LEN], arg2[MAX_ARG2_LEN], arg3[MAX_ARG3_LEN], arg4[MAX_ARG4_LEN];
     char arg1buff[MAX_LINE_LEN], arg2buff[MAX_LINE_LEN], arg3buff[MAX_LINE_LEN], arg4buff[MAX_LINE_LEN];
     
@@ -91,7 +92,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         strncpy(arg1, arg1buff, MAX_ARG1_LEN);
     }      
     
-    // BRANCHING BASED ON ARG1
+    // MAIN BRANCHING BASED ON ARG1
 
     //create-user <user-name> <pin> <balance>
     if (strcmp(arg1, "create-user") == 0){
@@ -136,24 +137,126 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
             strncpy(arg3, arg3buff, strlen(arg3buff));    
         } 
         
+        //valid pin
         if(!valid_pin(arg3)){
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }
         
-     
-
-
-
+        //balance max
+        if (strlen(arg4buff) > 5){
+            printf("Usage: create-user <user-name> <pin> <balance>\n");
+            return;
+        }else{
+            strncpy(arg4, arg4buff, strlen(arg4buff));
+        }
         
+        //valid balance
+        if (!valid_balance(arg4)){
+            printf("Usage: create-user <user-name> <pin> <balance>\n");
+            return;
+        } else{
+            unsigned int balance = strtol(arg4, NULL, 5);
+        }
+        
+        //MAKE USER ACCOUNT/CARD
+        //
+
+        printf("Created user %s\n", arg2);
+        return; 
     }
     //deposit <user-name> <amt> 
     else if (strcmp(arg1, "deposit") == 0){
-
+        
+        //null
+        if (!arg2buff || !arg3buff){
+            printf("Usage: deposit <user-name> <amt>\n");
+            return;
+        }
+        
+        //empty
+        if (strlen(arg2buff) < 1 || strlen(arg3buff) < 1){
+            printf("Usage: deposit <user-name> <amt>\n");
+            return;
+        }   
+        
+        //user max
+        if strlen(arg2) < 250){
+            printf("Usage: deposit <user-name> <amt>\n");
+            return;
+        }else{
+            strncpy(arg2, arg2buff, strlen(arg2buff));
+        }
+        
+        //valid user
+        if (!valid_user){
+            printf("Usage: deposit <user-name> <amt>\n");
+            return;
+        }
+        
+        //user DNE    
+        if (!user_exists(arg2)){
+            printf("No such user\n");
+            return;
+        }
+        
+        //amt len
+        if (strlen(arg3buff) > 5){
+            printf("Usage: deposit <user-name> <amt>\n");
+            return;
+        }
+        
+        //all digits
+        if (!all_digits(arg3buff)){
+            printf("Usage: deposit <user-name> <amt>\n");
+            return;
+        }else if(strtol(arg3buff, NULL, 10) > UINT_MAX){
+            printf("Too rich for this program\n");
+            return;
+        }
+        
+        strncpy(arg3, arg3buff, strlen(arg3buff));
+        
+        //valid balance
+        if (!valid_balance){
+            printf("Usage: deposit <user-name> <amt>\n");
+            return;      
+        }
+        
+        //CHANGE THE AMOUNT IN BANK
+        
+        printf("$%s added to %s's account\n", arg3, arg2);
+        return;
     }
     //balance <user-name>
     else if (strcmp(arg1, "balance") == 0){
-    
+        
+        //null
+        if (!arg2buff){printf("Usage: balance <user-name>\n"); return;}
+        
+        //empty or max len
+        if (strlen(arg2buff) < 1 || strlen(arg2buff) > 250){
+            printf("Usage: balance <user-name>\n");
+            return;
+        }
+        
+        //valid user
+        if (!valid_user(arg2buff)){
+            printf("Usage: balance <user-name>\n");
+            return;
+        }else{
+            strncpy(arg2, arg2buff, strlen(arg2buff));
+        }
+        
+        if (!user_exists(arg2)){
+            printf("No such user");
+            return;
+        }    
+            
+        //RETRIEVE BALANCE
+        
+        printf("$%d\n", balance);
+        return;
     }else{
         printf("Invalid command\n");
         return;
@@ -209,15 +312,34 @@ int user_exists(char *user_name){
 }
 
 int valid_pin(const char *pin){
-    while(*pin){
-        if (!isdigit(*pin++)){
+    if (!all_digits(pin)){
+        return FALSE;
+    }
+    
+    long num = strtol(pin, NULL, 10);
+    if (num < 0 || num > 9999){
+        return FALSE;
+    }
+    return TRUE;
+}
+
+int valid_balance(char *bal){
+    if (!all_digits(bal)){
+        return FALSE;
+    }
+    long num = strtol(bal, NULL, 10);
+
+    if (num < 0 || num >= UINT_MAX){
+        return FALSE;
+    }
+    return TRUE;
+}
+int all_digits(char *number){
+    int i;
+    for(i=0; i<strlen(str); i++){
+        if (number[i] < 48 || number[i] > 57){
             return FALSE;
         }
-    }   
-    
-    long d = strtol(pin, NULL, 10);
-    if (d < 0 || d > 9999){
-        return FALSE;
     }
     return TRUE;
 }
