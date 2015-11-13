@@ -7,6 +7,7 @@
 #include "atm.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 static const char prompt[] = "ATM: ";
 
@@ -29,8 +30,12 @@ int main(int argc,char*argv[])
     
     while (fgets(user_input, 10000,stdin) != NULL)
     {
-        atm_process_command(atm, user_input);
-        printf("%s", prompt);
+        char *ans= atm_process_command(atm, user_input);
+	if(!strcmp(ans,"")){
+        	printf("%s", prompt);
+	}else{
+		printf("%s (%s)", prompt,ans);
+	}
         fflush(stdout);
 	//printf("%s", prompt);
     }

@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <regex.h>
 
-int session_token=0;
+char *session_token="";
 
 ATM* atm_create()
 {
@@ -58,57 +58,57 @@ ssize_t atm_recv(ATM *atm, char *data, size_t max_data_len)
     return recvfrom(atm->sockfd, data, max_data_len, 0, NULL, NULL);
 }
 
-void atm_process_command(ATM *atm, char *command)
+char * atm_process_command(ATM *atm, char *command)
 {
-    // TODO: Implement the ATM's side of the ATM-bank protocol
-
-	/*
-	 * The following is a toy example that simply sends the
-	 * user's command to the bank, receives a message from the
-	 * bank, and then prints it to stdout.
-	 */
-    
-    //checking valid command
-    
-	//printf("%s\n",command);
 	char *str,*str1;
 	str=strtok(command,"\n");
-	//printf("first token is %s\n",t);
+
+	//balance	
 	if(strcmp(str,"balance")==0){
 		printf("asking about balance\n");
-		if(session_token==0){
+		if(!strcmp(session_token,"")){
 			printf("there is not currently a session\n");
+		}else{
 		}
+	//end-session
 	}else if(strcmp(str,"end-session")==0){
 		printf("asking to end session\n");
-		if(!session_token){
+		if(!strcmp(session_token,"")){
 			printf("No user logged in\n");
-		}else if(session_token){
+		}else{
 			printf("User logged out\n");
-			session_token = 0;
+			strncpy(session_token,"",1);
 		}
 	}else{
 		str1=strtok(str," ");
+		//begin-session <username>
 		if(strcmp(str1,"begin-session")==0){
-			if(session_token==1){
+			if(strcmp(session_token,"")){
 				printf("A user is already logged in\n");
-			}else if(session_token==0){
+			}else{
 				str1 = strtok(NULL," ");
-				printf("asking to begin a session with %s\n",str1);
-				//read from card file and ask for PIN here
-				session_token = 1;
+				int i = authenticate(str1);
+				if(i){printf("Authenticated\n");}
+				
 			}
+		//withdraw <amt>
 		}else if(strcmp(str1,"withdraw")==0){
 			printf("asking to withdraw\n");
-			if(session_token==0){
+			if(!strcmp(session_token,"")){
 				printf("No user logged in\n");
-			}else if(session_token==1){
+			}else{
 				str1 = strtok(NULL," ");
-				printf("wants to withdraw %s",str1);
+				if(str1==NULL){
+					printf("Invalid command\n");
+				}else{
+					printf("wants to withdraw %s",str1);
+				}			
 			}
+		}else{
+			printf("Invalid command\n");
 		}
 	}
-    	
+    	return session_token;
 
 	//printf("end of function the token is %d\n",session_token);
 
@@ -120,6 +120,46 @@ void atm_process_command(ATM *atm, char *command)
     	atm_send(atm, command, strlen(command));
     	n = atm_recv(atm,recvline,10000);
     	recvline[n]=0;
-    	fputs(recvline,stdout);*/
-
+    	fputs(recvline,stdout);
+*/
+	
 }
+
+int authenticate(char *user_name){
+	int ret=0;
+	if(user_name==NULL){
+		printf("Invalid command\n");	
+	}else{
+		//gets card file
+		FILE *card_file;
+		char *packet = malloc(256);
+		char *argcpy=malloc(strlen(user_name));
+    		strcpy(argcpy,user_name); //////FIX 
+		char *c = strcat(argcpy,".card");
+		card_file=fopen(c,"r");
+		if(!card_file){ //card file does not exist
+			printf("No such user\n");
+		}else{
+			char recvline[10000];
+			char sendline[10];
+    			int n;
+			printf("PIN?");
+			fgets(sendline, 10,stdin);
+			char *temp=strtok(sendline,"\n");	
+			sprintf(packet,"<authentication|%s>",user_name);
+			printf("sending packet:%s\n",packet);
+			/*atm_send(atm, packet, strlen(packet));
+    			n = atm_recv(atm,recvline,10000);
+    			recvline[n]=0;*/
+			//strncpy(session_token,str1,sizeof(str1));
+			
+			fclose(card_file);
+			ret=1;
+		}
+		free(argcpy);
+		free(packet);
+	}
+
+	return ret;
+}
+
