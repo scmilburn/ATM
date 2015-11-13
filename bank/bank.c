@@ -129,10 +129,10 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         }
         
         //user exists
-        if (user_exists(arg2)){
+        /*if (user_exists(arg2)){
             printf("Error: user %s already exists", arg2);
             return;
-        }
+        }*/
         
         //pin len max
         if (strlen(arg3buff) != 4){
@@ -291,11 +291,9 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
 
     	
     char sendline[1000];
-    //command[len]=0;
+    command[len]=0;
 
-    if((!strcmp(command[0],"<")) /*&& (!strcmp(command[strlen(command)-1],">"))*/){
-		printf("This is a valid packet\n");
-	}
+    
     printf("Received: %s\n",command);
     fputs(command, stdout);
     sprintf(sendline, "Bank got: %s", command);
@@ -337,14 +335,14 @@ int valid_user(char *user_name){
 
 
 int valid_pin(const char *pin){
-    if (!all_digits(pin)){
+    /*if (!all_digits(pin)){
         return FALSE;
     }
     
     long num = strtol(pin, NULL, 10);
     if (num < 0 || num > 9999){
         return FALSE;
-    }
+    }*/
     return TRUE;
 }
 
