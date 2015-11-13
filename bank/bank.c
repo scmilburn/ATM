@@ -72,7 +72,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
     
 
     //full command too long
-    if (strlen(command) >= MAX_LINE_SIZE){
+    if (strlen(command) >= MAX_LINE_LEN){
         printf("Invalid command\n");
         return;
     }
@@ -80,7 +80,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
     sscanf(command, "%s %s %s %s", arg1buff, arg2buff, arg3buff, arg4buff);
     
     //null input
-    if (strlen(arg1) < 1 || arg1 == NULL){
+    if (strlen(arg1) < 1 || !arg1){
         printf("Invalid command\n");
         return;
     }
@@ -127,7 +127,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         
         //user exists
         if (user_exists(arg2)){
-            printf("Error: user %d already exists", arg2);
+            printf("Error: user %s already exists", arg2);
             return;
         }
         
@@ -158,7 +158,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         } else{
-            unsigned int balance = strtol(arg4, NULL, 5);
+            //unsigned int balance = strtol(arg4, NULL, 5);
         }
         
         //MAKE USER ACCOUNT/CARD
@@ -183,7 +183,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         }   
         
         //user max
-        if strlen(arg2) < 250){
+        if (strlen(arg2) < 250){
             printf("Usage: deposit <user-name> <amt>\n");
             return;
         }else{
@@ -259,8 +259,9 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         }    
             
         //RETRIEVE BALANCE
+        //get-balance(arg2);
         
-        printf("$%d\n", balance);
+        //printf("$%d\n", balance);
         return;
     }else{
         printf("Invalid command\n");
@@ -270,7 +271,10 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len)
 {
-    // TODO: Implement the bank side of the ATM-bank protocol
+    //begin-session <user-name>
+        //withdraw <amt>
+        //balance
+        //end-session
 
 	/*
 	 * The following is a toy example that simply receives a
@@ -278,14 +282,52 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
 	 * it back to the ATM before printing it to stdout.
 	 */
 
-    	
+    // should be encrypting anything that is sent / decrypting anything taht is received
+    //command is encrypted
+/*      
     char sendline[1000];
     command[len]=0;
     sprintf(sendline, "Bank got: %s", command);
+    
+    if (strcmp(arg1, "begin-session") == 0){
+        if (successful login){
+            if (strcmp(arg1, "withdraw") == 0){ 
+                
+            }else if (strcmp(arg1, "balance") == 0){
+                //check if valid
+                if (!valid_balance){
+                    printf("Usage: balance");
+                }else{
+                    printf("$%d", get_balance);
+                }
+            }else if (strcmp(arg1, "end-session") == 0){
+                printf("User logged out\n");   
+            }else{
+                bank_send(bank, failure, strlen(failure));
+                printf("atm sent an invalid command:\n");
+                fputs(command, stdout);
+            }
+        }else{
+            printf("login failure");
+        }
+    }else if (strcmp(arg1, "withdraw") == 0){
+        printf("No user logged in\n");    
+    }else if (strcmp(arg1, "balance") == 0){
+        printf("No user logged in\n");   
+    }else if (strcmp(arg1, "end-session") == 0){
+        printf("No user logged in\n");   
+    }else{
+        bank_send(bank, failure, strlen(failure));
+        printf("atm sent an invalid command:\n");
+        fputs(command, stdout);
+    }
+
+    
+    //encrypt sendline before sending it
     bank_send(bank, sendline, strlen(sendline));
     printf("Received the following:\n");
     fputs(command, stdout);
-	
+*/
 }
 
 int valid_user(char *user_name){
@@ -309,14 +351,15 @@ int user_exists(char *user_name){
     //check if they have a card
     //char fname = <user-name>.card 
 
-    if (access(fname, F_OK) != -1){
-        return TRUE;
-    }else{
-        return FALSE;
-    }
+    //if (access(fname, F_OK) != -1){
+    //    return TRUE;
+    //}else{
+    //    return FALSE;
+    //}
+    return FALSE;
 }
 
-int valid_pin(const char *pin){
+int valid_pin(char *pin){
     if (!all_digits(pin)){
         return FALSE;
     }
@@ -342,7 +385,7 @@ int valid_balance(char *bal){
 
 int all_digits(char *number){
     int i;
-    for(i=0; i<strlen(str); i++){
+    for(i=0; i<strlen(number); i++){
         if (number[i] < 48 || number[i] > 57){
             return FALSE;
         }

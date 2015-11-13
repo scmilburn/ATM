@@ -114,12 +114,12 @@ void atm_process_command(ATM *atm, char *command)
 
 
 
-    	/*char recvline[10000];
+    	char recvline[10000];
     	int n;
     	printf("sending %s\n",command);
     	atm_send(atm, command, strlen(command));
     	n = atm_recv(atm,recvline,10000);
     	recvline[n]=0;
-    	fputs(recvline,stdout);*/
+    	fputs(recvline,stdout);
 
 }
