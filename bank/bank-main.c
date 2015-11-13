@@ -18,7 +18,14 @@ int main(int argc, char**argv)
    int n;
    char sendline[1000];
    char recvline[1000];
-
+   
+   FILE *file;
+   char user_input[1000];
+   file=fopen(argv[1],"r");
+   if(file==0){
+    	printf("Error opening bank initialization file\n");
+	return 64;
+   }
    Bank *bank = bank_create();
 
    printf("%s", prompt);

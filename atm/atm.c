@@ -114,16 +114,17 @@ char * atm_process_command(ATM *atm, char *command)
 
 
 
-    	/*char recvline[10000];
+    	char recvline[10000];
     	int n;
     	printf("sending %s\n",command);
     	atm_send(atm, command, strlen(command));
     	n = atm_recv(atm,recvline,10000);
     	recvline[n]=0;
     	fputs(recvline,stdout);
-*/
+
 	
 }
+
 
 int authenticate(char *user_name,ATM *atm){
 	int ret=0;
@@ -146,7 +147,7 @@ int authenticate(char *user_name,ATM *atm){
 			printf("PIN?");
 			fgets(sendline, 10,stdin);
 			char *temp=strtok(sendline,"\n");	
-			sprintf(packet,"<authentication|%s>",user_name);
+			sprintf(packet,"<authentication|%s",user_name);
 			printf("sending packet:%s\n",packet);
 			atm_send(atm, packet, strlen(packet));
     			n = atm_recv(atm,recvline,10000);

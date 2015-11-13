@@ -39,7 +39,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len);
 void bank_process_remote_command(Bank *bank, char *command, size_t len);
 int valid_user(char *user_name);
 int user_exists(char *user_name);
-int valid_pin(const char *pin);
+int valid_pin(char *pin);
 int valid_balance(char *bal);
 int all_digits(char *number);
 
