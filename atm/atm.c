@@ -101,7 +101,7 @@ char * atm_process_command(ATM *atm, char *command)
 				if(str1==NULL){
 					printf("Invalid command\n");
 				}else{
-					printf("wants to withdraw %s",str1);
+					withdraw(str1);
 				}			
 			}
 		}else{
@@ -146,7 +146,7 @@ int authenticate(char *user_name,ATM *atm){
     			int n;
 			printf("PIN?");
 			fgets(sendline, 10,stdin);
-			char *temp=strtok(sendline,"\n");	
+			char *pin=strtok(sendline,"\n");	
 			sprintf(packet,"<authentication|%s",user_name);
 			printf("sending packet:%s\n",packet);
 			atm_send(atm, packet, strlen(packet));
@@ -162,5 +162,9 @@ int authenticate(char *user_name,ATM *atm){
 	}
 
 	return ret;
+}
+
+void withdraw(char* amount){
+printf("wants to withdraw %s",amount);
 }
 
