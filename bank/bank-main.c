@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include "bank.h"
 #include "ports.h"
+#include "hash_table.h"
 
 static const char prompt[] = "BANK: ";
 
@@ -27,6 +28,7 @@ int main(int argc, char**argv)
 	return 64;
    }
    Bank *bank = bank_create();
+   HashTable *users = hash_table_create(100);
 
    printf("%s", prompt);
    fflush(stdout);
@@ -43,7 +45,7 @@ int main(int argc, char**argv)
        {
 	   printf("listening for local commands only\n");
            fgets(sendline, 10000,stdin);
-           bank_process_local_command(bank, sendline, strlen(sendline));
+           bank_process_local_command(bank, sendline, strlen(sendline),users);
            printf("%s", prompt);
            fflush(stdout);
        }
@@ -51,9 +53,10 @@ int main(int argc, char**argv)
        {
 	   printf("socket successfully created\n");
            n = bank_recv(bank, recvline, 10000);
-           bank_process_remote_command(bank, recvline, n);
+           bank_process_remote_command(bank, recvline, n, users);
        }
    }
+   hash_table_free(users);
 
    return EXIT_SUCCESS;
 }

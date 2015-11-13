@@ -30,7 +30,6 @@ int main(int argc, char* argv[]){
         atm_file=fopen(atm,"w");
         char key[KEYLENGTH];
         const char charset[]="abcdefghijklmnopqrstuvwxyz";
-        //add shared private key in files here
         
         srand((unsigned)time(&t));
         for (n = 0; n < KEYLENGTH; n++){

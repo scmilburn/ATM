@@ -1,9 +1,12 @@
 #include "bank.h"
 #include "ports.h"
+#include "hash_table.h"
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <limits.h>
+#include <time.h>
+
 
 #define MAX_ARG1_LEN 12 //cmd
 #define MAX_ARG2_LEN 251 //usrname
@@ -64,11 +67,20 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len)
     return recvfrom(bank->sockfd, data, max_data_len, 0, NULL, NULL);
 }
 
-void bank_process_local_command(Bank *bank, char *command, size_t len)
+void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable *users)
 {
     //creating larger buffers to prevent overflow
     char arg1[MAX_ARG1_LEN], arg2[MAX_ARG2_LEN], arg3[MAX_ARG3_LEN], arg4[MAX_ARG4_LEN];
     char arg1buff[MAX_LINE_LEN], arg2buff[MAX_LINE_LEN], arg3buff[MAX_LINE_LEN], arg4buff[MAX_LINE_LEN];
+
+	memset(arg1,'\0',MAX_ARG1_LEN);
+        memset(arg2,'\0',MAX_ARG2_LEN);
+	memset(arg3,'\0',MAX_ARG3_LEN);
+	memset(arg4,'\0',MAX_ARG4_LEN);
+	//memset(arg1buff,'\0',MAX_LINE_LEN);
+	//memset(arg2buff,'\0',MAX_LINE_LEN);
+  	//memset(arg3buff,'\0',MAX_LINE_LEN);
+	//memset(arg4buff,'\0',MAX_LINE_LEN);
     
 
     //full command too long
@@ -80,13 +92,15 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
     int n = sscanf(command, "%s %s %s %s", arg1buff, arg2buff, arg3buff, arg4buff);
     
     //null input
-    if (strlen(arg1) < 1 || n==1){
+    if (strlen(arg1buff) < 1 || n==1){
+        printf("Empty value\n");
         printf("Invalid command\n");
         return;
     }
 
     //check if args are correct len
     if (strlen(arg1buff) > MAX_ARG1_LEN){
+	printf("args too long\n");
         printf("Invalid command\n");
         return;
     }else{
@@ -98,24 +112,21 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
 
     //create-user <user-name> <pin> <balance>
     if (strcmp(arg1, "create-user") == 0){
-        if(n != 4){
-       		printf("Invalid command\n"); 
-		return;
+        if(n != 4){ //checks if scanf read correct number of args
+       	    printf("Invalid command\n"); 
+	    return;
     	}
-        //null
-        /*if (!arg2buff || !arg3buff || !arg4buff){
-            printf("Usage: create-user <user-name> <pin> <balance>\n");
-            return;        
-        }*/
         
         //empty
         if (strlen(arg2buff) < 1 || strlen(arg3buff) < 1 || strlen(arg4buff) < 1){ 
+	    printf("empty arguments\n");
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }
         
         //username max 
         if (strlen(arg2buff) > 250){
+	    printf("username length too large\n");
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }else{
@@ -124,19 +135,21 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         
         //valid user name
         if (!valid_user(arg2)){
+	    printf("user not valid\n");
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }
         
         //user exists
 
-        if (user_exists(arg2)){
+        if (user_exists(arg2,users)){
             printf("Error: user %s already exists", arg2);
             return;
         }
         
         //pin len max
         if (strlen(arg3buff) != 4){
+	    printf("pin not long enough\n");
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }else{
@@ -145,12 +158,14 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         
         //valid pin
         if(!valid_pin(arg3)){
+	    printf("not valid pin\n");
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }
         
         //balance max
         if (strlen(arg4buff) > 5){
+	    printf("balance too large");
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }else{
@@ -159,6 +174,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         
         //valid balance
         if (!valid_balance(arg4)){
+	    printf("balance not valid\n");
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         } else{
@@ -167,8 +183,40 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         
         //MAKE USER ACCOUNT/CARD
         //NEED TO FIGURE OUT CARD STRUCTURE AND ENCRYPTION
+	char *user_name_cpy=malloc(strlen(arg2));
+	strncpy(user_name_cpy,arg2,strlen(arg2));
+	char *user_name=malloc(strlen(arg2));
+	strncpy(user_name,arg2,strlen(arg2));
+	char* temp=strcat(arg2,";");
+	char* card=strcat(temp,arg3);
+	char *file=strcat(user_name_cpy,".card");
+	printf("creating card file %s\n",file);
+	//encrypt char *card
+	
+	char key[32];
+	int n;
+	time_t t;
+        const char charset[]="abcdefghijklmnopqrstuvwxyz";
+        srand((unsigned)time(&t));
+        for (n = 0; n < 32; n++){
+            int k = rand() % 26;
+            key[n]=charset[k];
+        }
+        key[32]='\0';
 
-        printf("Created user %s\n", arg2);
+	printf("The key for this card file is %s\n",key);
+	FILE *card_file=fopen(file,"w");
+	if (card_file==0){
+		printf("Error creating card file for user %s\n",user_name);
+	}else{
+		//encrypt with key and write to card file
+		//add encryption to hash
+		//add user to hash
+		printf("Created user %s\n", user_name);
+		fclose(card_file);
+	}
+	free(user_name_cpy);
+	free(user_name);
         return; 
     }
     //deposit <user-name> <amt> 
@@ -283,7 +331,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
     }        
 }
 
-void bank_process_remote_command(Bank *bank, char *command, size_t len)
+void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTable *users)
 {
     //begin-session <user-name>
         //withdraw <amt>
@@ -369,32 +417,33 @@ int valid_user(char *user_name){
     
     int i;
     for (i = 0; i < strlen(user_name); i++){
-        if(user_name[i] < 65 || user_name[i] > 122){
+	int ascii=(int)user_name[i];
+	 //printf("%d\n",ascii);
+        if(ascii < 65 || ascii > 122){
             return 0;
-        }else if(user_name[i] > 90 || user_name[i] < 97){
-            return 0;
+        }else if(ascii > 90 &&  ascii < 97){
+	    return 0;
         }
     }
     return 1;
 }
 
-int user_exists(char *user_name){
-    //check if they have a card
-    //char fname = <user-name>.card 
-    //if (access(fname, F_OK) != -1){
-    //    return TRUE;
-    //}else{
-    //    return FALSE;
-    //}
-    return FALSE;
+int user_exists(char *user_name,HashTable *users){
+    if(hash_table_find(users, user_name)==NULL){
+	//printf("user does not exist already\n");
+	return 0;
+    }
+    return 1;
 }
 
 int valid_pin(char *pin){
     if (!all_digits(pin)){
+        printf("not all digits\n");
         return FALSE;
     }
     
     long num = strtol(pin, NULL, 10);
+    printf("Balance : %lu\n",num);
     if (num < 0 || num > 9999){
         return FALSE;
     }
@@ -416,9 +465,11 @@ int valid_balance(char *bal){
 int all_digits(char *number){
     int i;
     for(i=0; i<strlen(number); i++){
-        if (number[i] < 48 || number[i] > 57){
-            return FALSE;
+	int ascii = (int)number[i];
+        if (ascii < 48 || ascii > 57){
+            return 0;
         }
     }
     return 1;
 }
+
