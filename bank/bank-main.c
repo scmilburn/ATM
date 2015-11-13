@@ -46,6 +46,7 @@ int main(int argc, char**argv)
 	   printf("listening for local commands only\n");
            fgets(sendline, 10000,stdin);
            bank_process_local_command(bank, sendline, strlen(sendline),users);
+	   printf("Users hash is now size: %d\n",hash_table_size(users));
            printf("%s", prompt);
            fflush(stdout);
        }

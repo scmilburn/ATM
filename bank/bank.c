@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <time.h>
+#include <openssl/evp.h>
 
 
 #define MAX_ARG1_LEN 12 //cmd
@@ -77,10 +78,6 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         memset(arg2,'\0',MAX_ARG2_LEN);
 	memset(arg3,'\0',MAX_ARG3_LEN);
 	memset(arg4,'\0',MAX_ARG4_LEN);
-	//memset(arg1buff,'\0',MAX_LINE_LEN);
-	//memset(arg2buff,'\0',MAX_LINE_LEN);
-  	//memset(arg3buff,'\0',MAX_LINE_LEN);
-	//memset(arg4buff,'\0',MAX_LINE_LEN);
     
 
     //full command too long
@@ -181,10 +178,10 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
             //unsigned int balance = strtol(arg4, NULL, 5);
         }
         
-        //MAKE USER ACCOUNT/CARD
-        //NEED TO FIGURE OUT CARD STRUCTURE AND ENCRYPTION
-	char *user_name_cpy=malloc(strlen(arg2));
+	char *user_name_cpy=malloc(strlen(arg2)); //this for some reason does not get freed
 	strncpy(user_name_cpy,arg2,strlen(arg2));
+	printf("user_name copy is %s\n",user_name_cpy);
+
 	char *user_name=malloc(strlen(arg2));
 	strncpy(user_name,arg2,strlen(arg2));
 	char* temp=strcat(arg2,";");
@@ -193,7 +190,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 	printf("creating card file %s\n",file);
 	//encrypt char *card
 	
-	char key[32];
+	unsigned char key[32];
 	int n;
 	time_t t;
         const char charset[]="abcdefghijklmnopqrstuvwxyz";
@@ -212,12 +209,40 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 		//encrypt with key and write to card file
 		//add encryption to hash
 		//add user to hash
+		EVP_CIPHER_CTX ctx;
+		unsigned char encrypted[256];
+		unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+		EVP_CIPHER_CTX_init(&ctx);
+		EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);
+		int len1;
+		if(!EVP_EncryptUpdate(&ctx,encrypted,&len1,card,strlen(card))){
+			printf("Encrypt Update Error\n");
+		}
+		if(!EVP_EncryptFinal(&ctx,encrypted+len1,&len1)){
+			printf("Encrypt Final Error\n");
+						
+		}
+		printf("%s\n",encrypted);
+
+		fwrite(encrypted,1,sizeof(encrypted),card_file);
 		printf("Created user %s\n", user_name);
+		EVP_CIPHER_CTX_cleanup(&ctx);
+		
 		fclose(card_file);
+
+		hash_table_add(users, user_name, key);
 	}
 	free(user_name_cpy);
 	free(user_name);
-        return; 
+	user_name_cpy=NULL;
+	user_name=NULL;
+        memset(arg1,'\0',MAX_ARG1_LEN);
+        memset(arg2,'\0',MAX_ARG2_LEN);
+	memset(arg3,'\0',MAX_ARG3_LEN);
+	memset(arg4,'\0',MAX_ARG4_LEN); 
+	memset(file,'\0',strlen(file));
+	memset(card,'\0',strlen(card));
+	memset(temp,'\0',strlen(temp)); 
     }
     //deposit <user-name> <amt> 
     /*else if (strcmp(arg1, "deposit") == 0){
@@ -327,7 +352,10 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         return;
     }*/else{
         printf("Invalid command\n");
-        return;
+        memset(arg1,'\0',MAX_ARG1_LEN);
+        memset(arg2,'\0',MAX_ARG2_LEN);
+	memset(arg3,'\0',MAX_ARG3_LEN);
+	memset(arg4,'\0',MAX_ARG4_LEN);
     }        
 }
 
@@ -429,6 +457,7 @@ int valid_user(char *user_name){
 }
 
 int user_exists(char *user_name,HashTable *users){
+    printf("Checking is %s exists\n",user_name);
     if(hash_table_find(users, user_name)==NULL){
 	//printf("user does not exist already\n");
 	return 0;
