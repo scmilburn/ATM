@@ -77,7 +77,7 @@ char * atm_process_command(ATM *atm, char *command)
 			printf("No user logged in\n");
 		}else{
 			printf("User logged out\n");
-			strncpy(session_token,"",1);
+			session_token="";
 		}
 	}else{
 		str1=strtok(str," ");
@@ -87,7 +87,7 @@ char * atm_process_command(ATM *atm, char *command)
 				printf("A user is already logged in\n");
 			}else{
 				str1 = strtok(NULL," ");
-				int i = authenticate(str1);
+				int i = authenticate(str1,atm);
 				if(i){printf("Authenticated\n");}
 				
 			}
@@ -125,7 +125,7 @@ char * atm_process_command(ATM *atm, char *command)
 	
 }
 
-int authenticate(char *user_name){
+int authenticate(char *user_name,ATM *atm){
 	int ret=0;
 	if(user_name==NULL){
 		printf("Invalid command\n");	
@@ -148,11 +148,11 @@ int authenticate(char *user_name){
 			char *temp=strtok(sendline,"\n");	
 			sprintf(packet,"<authentication|%s>",user_name);
 			printf("sending packet:%s\n",packet);
-			/*atm_send(atm, packet, strlen(packet));
+			atm_send(atm, packet, strlen(packet));
     			n = atm_recv(atm,recvline,10000);
-    			recvline[n]=0;*/
-			//strncpy(session_token,str1,sizeof(str1));
-			
+    			recvline[n]=0;
+			printf("ATM recieved back %s\n",recvline);
+			session_token=user_name;
 			fclose(card_file);
 			ret=1;
 		}

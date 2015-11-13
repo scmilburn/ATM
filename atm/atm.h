@@ -32,6 +32,6 @@ void atm_free(ATM *atm);
 ssize_t atm_send(ATM *atm, char *data, size_t data_len);
 ssize_t atm_recv(ATM *atm, char *data, size_t max_data_len);
 char * atm_process_command(ATM *atm, char *command);
-int authenticate(char *user_name);
+int authenticate(char *user_name,ATM *atm);
 
 #endif
