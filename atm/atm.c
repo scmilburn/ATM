@@ -113,6 +113,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 				if(str1==NULL){
 					printf("Invalid command\n");
 				}else{
+//CHECK IF AMOUNT IF VALID
 					sprintf(packet,"<withdraw|%s|%s>",session_token,str1);
 					printf("sending packet:%s\n",packet);
 					withdraw(packet,key,atm);
