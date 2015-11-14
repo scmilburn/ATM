@@ -73,11 +73,6 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
     //creating larger buffers to prevent overflow
     char arg1[MAX_ARG1_LEN], arg2[MAX_ARG2_LEN], arg3[MAX_ARG3_LEN], arg4[MAX_ARG4_LEN];
     char arg1buff[MAX_LINE_LEN], arg2buff[MAX_LINE_LEN], arg3buff[MAX_LINE_LEN], arg4buff[MAX_LINE_LEN];
-
-	memset(arg1,'\0',MAX_ARG1_LEN);
-        memset(arg2,'\0',MAX_ARG2_LEN);
-	memset(arg3,'\0',MAX_ARG3_LEN);
-	memset(arg4,'\0',MAX_ARG4_LEN);
     
 
     //full command too long
@@ -101,7 +96,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         printf("Invalid command\n");
         return;
     }else{
-        strncpy(arg1, arg1buff, MAX_ARG1_LEN);
+        strcpy(arg1, arg1buff);
     }      
     
     // MAIN BRANCHING BASED ON ARG1
@@ -122,12 +117,12 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         }
         
         //username max 
-        if (strlen(arg2buff) > 250){
+        if (strlen(arg2buff) > 250){ //shouldn't it be max arg2 
 	    printf("username length too large\n");
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }else{
-            strncpy(arg2, arg2buff, strlen(arg2buff));
+            strcpy(arg2, arg2buff);
         }
         
         //valid user name
@@ -138,11 +133,11 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         }
         
         //user exists
-
-        if (user_exists(arg2,users)){
+	//printf("checking if aaa%saaaa exists\n",arg2);
+        /*if (user_exists(arg2,users)){
             printf("Error: user %s already exists", arg2);
             return;
-        }
+        }*/
         
         //pin len max
         if (strlen(arg3buff) != 4){
@@ -150,7 +145,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }else{
-            strncpy(arg3, arg3buff, strlen(arg3buff));    
+            strcpy(arg3, arg3buff);    
         } 
         
         //valid pin
@@ -166,7 +161,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }else{
-            strncpy(arg4, arg4buff, strlen(arg4buff));
+            strcpy(arg4, arg4buff);
         }
         
         //valid balance
@@ -178,29 +173,22 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
             //unsigned int balance = strtol(arg4, NULL, 5);
         }
         
-	char *user_name_cpy=malloc(strlen(arg2)); //this for some reason does not get freed
-	strncpy(user_name_cpy,arg2,strlen(arg2));
+	char *user_name_cpy=malloc(strlen(arg2));
+	memset(user_name_cpy,'\0',strlen(arg2));
+	printf("user_name copy is %s\n",user_name_cpy);
+	printf("arg2 is %s\n",arg2);
+	strcpy(user_name_cpy,arg2);
 	printf("user_name copy is %s\n",user_name_cpy);
 
 	char *user_name=malloc(strlen(arg2));
-	strncpy(user_name,arg2,strlen(arg2));
+	//printf("user_name is %s\n",user_name);
+	strcpy(user_name,arg2);
 	char* temp=strcat(arg2,";");
-	char* card=strcat(temp,arg3);
+	char* card=strcat(temp,arg3); //info to put on card
 	char *file=strcat(user_name_cpy,".card");
-	printf("creating card file %s\n",file);
-	//encrypt char *card
-	
+	printf("creating card file %s with information %s\n",file,card);
 	unsigned char key[32];
-	int n;
-	time_t t;
-        const char charset[]="abcdefghijklmnopqrstuvwxyz";
-        srand((unsigned)time(&t));
-        for (n = 0; n < 32; n++){
-            int k = rand() % 26;
-            key[n]=charset[k];
-        }
-        key[32]='\0';
-
+	generate_key(key);
 	printf("The key for this card file is %s\n",key);
 	FILE *card_file=fopen(file,"w");
 	if (card_file==0){
@@ -209,40 +197,33 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 		//encrypt with key and write to card file
 		//add encryption to hash
 		//add user to hash
-		EVP_CIPHER_CTX ctx;
-		unsigned char encrypted[256];
-		unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-		EVP_CIPHER_CTX_init(&ctx);
-		EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);
-		int len1;
-		if(!EVP_EncryptUpdate(&ctx,encrypted,&len1,card,strlen(card))){
-			printf("Encrypt Update Error\n");
-		}
-		if(!EVP_EncryptFinal(&ctx,encrypted+len1,&len1)){
-			printf("Encrypt Final Error\n");
-						
-		}
-		printf("%s\n",encrypted);
+		unsigned char encrypted[10000];
+		encrypt(card,key,encrypted);
 
 		fwrite(encrypted,1,sizeof(encrypted),card_file);
+		char * arr[3];
+		arr[0]=arg3;
+		arr[1]=arg4;
+		arr[2]=key;
+		hash_table_add(users, user_name, arr);
 		printf("Created user %s\n", user_name);
-		EVP_CIPHER_CTX_cleanup(&ctx);
+		
 		
 		fclose(card_file);
 
-		hash_table_add(users, user_name, key);
 	}
 	free(user_name_cpy);
 	free(user_name);
-	user_name_cpy=NULL;
-	user_name=NULL;
-        memset(arg1,'\0',MAX_ARG1_LEN);
+	//user_name_cpy=NULL;
+	//user_name=NULL;
+        /*memset(arg1,'\0',MAX_ARG1_LEN);
         memset(arg2,'\0',MAX_ARG2_LEN);
 	memset(arg3,'\0',MAX_ARG3_LEN);
 	memset(arg4,'\0',MAX_ARG4_LEN); 
 	memset(file,'\0',strlen(file));
 	memset(card,'\0',strlen(card));
 	memset(temp,'\0',strlen(temp)); 
+    */
     }
     //deposit <user-name> <amt> 
     /*else if (strcmp(arg1, "deposit") == 0){
@@ -359,40 +340,69 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
     }        
 }
 
-void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTable *users)
+void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTable *users,char *key)
 {
-    //begin-session <user-name>
-        //withdraw <amt>
-        //balance
-        //end-session
-
-	/*
-	 * The following is a toy example that simply receives a
-	 * string from the ATM, prepends "Bank got: " and echoes 
-	 * it back to the ATM before printing it to stdout.
-	 */
-
-    // should be encrypting anything that is sent / decrypting anything taht is received
-    //command is encrypted
      
     char sendline[1000];
     command[len]=0;
-
+    char * packet = malloc(10000);
+    memset(packet,'\0',strlen(packet));
     
     printf("Received: %s\n",command);
-    //fputs(command, stdout);
-    sprintf(sendline, "Bank got: %s", command);
-    //DECRYPT
-    char packet[256];
-    int n = sscanf(command, "<%s", packet);
-    printf("the function is %s\n",packet);
-    char * split=strtok(packet,"|");
-    if (!strcmp(split,"authentication")){
-        printf("asking for authentification\n");
+    //sprintf(sendline, "Bank got: %s", command);
+
+    char *last = &command[strlen(command)-1];
+    if(!strcmp(last,">") && command[0]=='<'){
+	printf("This is a full packet\n");
     }
+    command=&command[1];
+    char *rem_last= strtok(command,">");
+    char *comm=strtok(rem_last,"|");
+    printf("the function is %s\n",comm);
+
+//authentication <authentication|"name">
+    if (!strcmp(comm,"authentication")){
+        comm = strtok(NULL,"|");
+	char *name=comm;
+	if(name ==NULL){
+		printf("ERROR packet not in correct format\n");
+	}
+        printf("asking for authentification for %s\n",name);
+        char* val = hash_table_find(users, name);
+        if(val==NULL){
+		printf("key not found\n");
+	}else{
+		printf("The value is %s\n",val);
+	}
+    }
+
+//withdraw <withdraw|"name"|"amount">
+ else if (!strcmp(comm,"withdraw")){
+        comm = strtok(NULL,"|");
+	//char *name=comm;
+	if(comm ==NULL){
+		printf("ERROR packet not in correct format\n");
+	}
+	//go in hash and take out amount
+	strcpy(packet,"<withdraw_successful>");
+	printf("sending packet: %s\n",packet);
+	//printf("HERE\n");
+	char encrypted[10000];
+	encrypt(packet,key,encrypted);
+	bank_send(bank, encrypted, strlen(encrypted));
+ }
+
+//balance <balance|"name">
+ else if (!strcmp(comm,"balance")){
+        comm = strtok(NULL,"|");
+	char *name=comm;
+	if(name ==NULL){
+		printf("ERROR packet not in correct format\n");
+	}
+ }
     
 
-    bank_send(bank, sendline, strlen(sendline));
+    //bank_send(bank, encrypted, strlen(encrypted));
    
  /*   
     if (strcmp(arg1, "begin-session") == 0){
@@ -435,6 +445,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
     fputs(command, stdout);
 */
 
+    free(packet);
 }
 
 int valid_user(char *user_name){
@@ -457,9 +468,10 @@ int valid_user(char *user_name){
 }
 
 int user_exists(char *user_name,HashTable *users){
-    printf("Checking is %s exists\n",user_name);
+    printf("Checking if %s exists\n",user_name);
+    printf("Finding -> %s\n", (hash_table_find(users, user_name) == NULL ? "Not Found" : "FAIL"));
     if(hash_table_find(users, user_name)==NULL){
-	//printf("user does not exist already\n");
+	printf("user does not exist already\n");
 	return 0;
     }
     return 1;
@@ -472,7 +484,6 @@ int valid_pin(char *pin){
     }
     
     long num = strtol(pin, NULL, 10);
-    printf("Balance : %lu\n",num);
     if (num < 0 || num > 9999){
         return FALSE;
     }
@@ -500,5 +511,53 @@ int all_digits(char *number){
         }
     }
     return 1;
+}
+void encrypt(char *message,char*key,unsigned char*encrypted){
+	EVP_CIPHER_CTX ctx;
+	//unsigned char encrypted[10000];
+	unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+	EVP_CIPHER_CTX_init(&ctx);
+	EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);
+	int len1;
+	if(!EVP_EncryptUpdate(&ctx,encrypted,&len1,message,strlen(message))){
+		printf("Encrypt Update Error\n");
+	}
+	if(!EVP_EncryptFinal(&ctx,encrypted+len1,&len1)){
+		printf("Encrypt Final Error\n");
+	}
+	EVP_CIPHER_CTX_cleanup(&ctx);
+
+}
+
+void decrypt(unsigned char *message,char*key, unsigned char*decrypted){
+	EVP_CIPHER_CTX ctx;
+	//unsigned char encrypted[10000];
+	unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+	EVP_CIPHER_CTX_init(&ctx);
+	EVP_DecryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);
+	int len1;
+	if(!EVP_DecryptUpdate(&ctx,decrypted,&len1,message,strlen(message))){
+		printf("Encrypt Update Error\n");
+	}
+	if(!EVP_DecryptFinal(&ctx,decrypted+len1,&len1)){
+		printf("Encrypt Final Error\n");
+						
+	}
+	//char * mess=strtok(decrypted,"\n");
+	//decrypted=mess;
+	EVP_CIPHER_CTX_cleanup(&ctx);
+}
+
+void generate_key(char *key){
+	int n;
+	time_t t;
+        const char charset[]="abcdefghijklmnopqrstuvwxyz";
+        srand((unsigned)time(&t));
+        for (n = 0; n < 32; n++){
+            int k = rand() % 26;
+            key[n]=charset[k];
+        }
+        key[32]='\0';
+
 }
 

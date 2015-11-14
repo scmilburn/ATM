@@ -40,10 +40,10 @@ int main(int argc, char* argv[]){
 
         unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
         printf("Private key generated is %s\n",key);        
-        fwrite(key,1,sizeof(key),bank_file);
-        fwrite(key,1,sizeof(key),atm_file);
-        fwrite(iv,1,sizeof(iv),bank_file);
-        fwrite(iv,1,sizeof(iv),atm_file);
+        fwrite(key,1,strlen(key),bank_file);
+        fwrite(key,1,strlen(key),atm_file);
+        //fwrite(iv,1,strlen(iv),bank_file);
+        //fwrite(iv,1,strlen(iv),atm_file);
         fclose(atm_file);
         fclose(bank_file);
         //printf("file does not exist: Good\n");

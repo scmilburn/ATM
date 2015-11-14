@@ -15,12 +15,15 @@ int main(int argc,char*argv[])
 {
     FILE *file;
     char user_input[1000];
+    char buffer[32];
     file=fopen(argv[1],"r");
     if(file==0){
     	printf("Error opening ATM initialization file\n");
 	return 64;
     }
-    
+    fread(buffer,sizeof(buffer),32,file);
+    printf("atm file contents: %s\n",buffer);
+ 
     ATM *atm = atm_create();
 
     printf("%s", prompt);
@@ -30,7 +33,7 @@ int main(int argc,char*argv[])
     
     while (fgets(user_input, 10000,stdin) != NULL)
     {
-        char *ans= atm_process_command(atm, user_input);
+        char *ans= atm_process_command(atm, user_input,buffer);
 	if(!strcmp(ans,"")){
         	printf("%s", prompt);
 	}else{

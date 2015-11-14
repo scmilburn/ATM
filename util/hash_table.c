@@ -86,6 +86,7 @@ uint32_t hash(const char * data, int len)
 void hash_table_add(HashTable *ht, char *key, void *val)
 {
     uint32_t idx = hash(key, strlen(key)) % ht->num_bins;
+	printf("%zu\n",idx);
 
     // Do not permit duplicates
     if(list_find(ht->bins[idx], key) == NULL)
@@ -99,6 +100,8 @@ void hash_table_add(HashTable *ht, char *key, void *val)
 void* hash_table_find(HashTable *ht, const char *key)
 {
     uint32_t idx = hash(key, strlen(key)) % ht->num_bins;
+	printf("%zu\n",idx);
+	puts("SEG FAULT\n");
     return list_find(ht->bins[idx], key);
 }
 

@@ -37,12 +37,15 @@ void bank_free(Bank *bank);
 ssize_t bank_send(Bank *bank, char *data, size_t data_len);
 ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len);
 void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable *h);
-void bank_process_remote_command(Bank *bank, char *command, size_t len,HashTable *h);
+void bank_process_remote_command(Bank *bank, char *command, size_t len,HashTable *h,char *key);
 int valid_user(char *user_name);
 int user_exists(char *user_name,HashTable *users);
 int valid_pin(char *pin);
 int valid_balance(char *bal);
 int all_digits(char *number);
+void decrypt(unsigned char *message,char*key, unsigned char*decrypted);
+void encrypt(char *message,char*key,unsigned char*encrypted);
+void generate_key(char *key);
 
 
 #endif

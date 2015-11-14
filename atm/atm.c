@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <regex.h>
+#include <openssl/evp.h>
 
 char *session_token="";
 
@@ -58,11 +59,11 @@ ssize_t atm_recv(ATM *atm, char *data, size_t max_data_len)
     return recvfrom(atm->sockfd, data, max_data_len, 0, NULL, NULL);
 }
 
-char * atm_process_command(ATM *atm, char *command)
+char * atm_process_command(ATM *atm, char *command,char *key)
 {
 	char *str,*str1;
 	str=strtok(command,"\n");
-
+	char *packet = malloc(10000);
 	//balance	
 	if(strcmp(str,"balance")==0){
 		printf("asking about balance\n");
@@ -87,8 +88,19 @@ char * atm_process_command(ATM *atm, char *command)
 				printf("A user is already logged in\n");
 			}else{
 				str1 = strtok(NULL," ");
-				int i = authenticate(str1,atm);
-				if(i){printf("Authenticated\n");}
+				if(str1==NULL){
+					printf("Invalid command\n");
+				}else{
+					char sendline[4];
+    					int n;
+					printf("PIN?");
+					fgets(sendline, 4,stdin);
+					char *pin=strtok(sendline,"\n");	
+					sprintf(packet,"<authentication|%s>",str1);
+					printf("sending packet:%s\n",packet);
+					int i = authenticate(str1, packet,atm,key);
+					if(i){printf("Authenticated\n");}
+				}
 				
 			}
 		//withdraw <amt>
@@ -101,70 +113,137 @@ char * atm_process_command(ATM *atm, char *command)
 				if(str1==NULL){
 					printf("Invalid command\n");
 				}else{
-					withdraw(str1);
+					sprintf(packet,"<withdraw|%s|%s>",session_token,str1);
+					printf("sending packet:%s\n",packet);
+					withdraw(packet,key,atm);
 				}			
 			}
 		}else{
 			printf("Invalid command\n");
 		}
 	}
+	free(packet);
     	return session_token;
 
 	//printf("end of function the token is %d\n",session_token);
 
 
 
-    	char recvline[10000];
+/*    	char recvline[10000];
     	int n;
     	printf("sending %s\n",command);
     	atm_send(atm, command, strlen(command));
     	n = atm_recv(atm,recvline,10000);
     	recvline[n]=0;
     	fputs(recvline,stdout);
-
+*/
 	
 }
 
 
-int authenticate(char *user_name,ATM *atm){
-	int ret=0;
-	if(user_name==NULL){
-		printf("Invalid command\n");	
+int authenticate(char *user_name, char *packet, ATM *atm,char *key){
+	int ret=0;	
+	FILE *card_file;
+	char *argcpy=malloc(strlen(user_name));
+    	strcpy(argcpy,user_name); //////FIX 
+	char *c = strcat(argcpy,".card");
+	card_file=fopen(c,"r");
+	if(!card_file){ //card file does not exist
+		printf("No such user\n");
 	}else{
-		//gets card file
-		FILE *card_file;
-		char *packet = malloc(256);
-		char *argcpy=malloc(strlen(user_name));
-    		strcpy(argcpy,user_name); //////FIX 
-		char *c = strcat(argcpy,".card");
-		card_file=fopen(c,"r");
-		if(!card_file){ //card file does not exist
-			printf("No such user\n");
-		}else{
-			char recvline[10000];
-			char sendline[10];
-    			int n;
-			printf("PIN?");
-			fgets(sendline, 10,stdin);
-			char *pin=strtok(sendline,"\n");	
-			sprintf(packet,"<authentication|%s",user_name);
-			printf("sending packet:%s\n",packet);
-			atm_send(atm, packet, strlen(packet));
-    			n = atm_recv(atm,recvline,10000);
-    			recvline[n]=0;
-			printf("ATM recieved back %s\n",recvline);
-			session_token=user_name;
-			fclose(card_file);
-			ret=1;
-		}
-		free(argcpy);
-		free(packet);
+		char recvline[10000];
+		unsigned char encrypted[10000];
+		encrypt(packet,key,encrypted);	
+		atm_send(atm, encrypted, strlen(encrypted));
+    		/*int n = atm_recv(atm,recvline,10000);
+    		recvline[n]=0;
+		char decrypted[10000];
+		decrypt(recvline,key,decrypted);
+		printf("ATM recieved back %s\n",decrypted);*/
+		//parse_packet(decrypted);
+		//decrypt card file with key
+		//check if pin matches pin
+		session_token=user_name;
+		fclose(card_file);
+		ret=1;
 	}
-
+	free(argcpy);
 	return ret;
 }
 
-void withdraw(char* amount){
-printf("wants to withdraw %s",amount);
+void withdraw(char *packet,char *key, ATM *atm){
+	char *encrypted[10000];
+	char recvline[10000];
+	encrypt(packet,key,encrypted);
+	atm_send(atm, encrypted, strlen(encrypted));
+	int n = atm_recv(atm,recvline,10000);
+    	recvline[n]=0;
+	char decrypted[10000];
+	decrypt(recvline,key,decrypted);
+	char *parse=strtok(decrypted,"\n");
+	char *last = &parse[strlen(parse)-1];
+        if(!strcmp(last,">") && parse[0]=='<'){ //this doesn't work?
+	    printf("This is a full packet\n");
+        }
+        parse=&parse[1];
+	
+        char * parsed= strtok(parse,">");
+
+	printf("recieved %s\n",parsed);
+	if(strcmp(parsed,"withdraw_successful")){
+		printf("ERROR: withdrawal not successful\n");
+	}
 }
+
+void parse_packet(char *packet, char *temp){
+	char *parse=strtok(packet,"\n");
+	char *last = &parse[strlen(parse)-1];
+        if(!strcmp(last,">") && parse[0]=='<'){
+	    printf("This is a full packet\n");
+        }
+        parse=&parse[1];
+	
+        char * t= strtok(parse,">");
+	temp=t;
+	
+}
+
+void encrypt(char *message,char*key,unsigned char*encrypted){
+	EVP_CIPHER_CTX ctx;
+	//unsigned char encrypted[10000];
+	unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+	EVP_CIPHER_CTX_init(&ctx);
+	EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);
+	int len1;
+	if(!EVP_EncryptUpdate(&ctx,encrypted,&len1,message,strlen(message))){
+		printf("Encrypt Update Error\n");
+	}
+	if(!EVP_EncryptFinal(&ctx,encrypted+len1,&len1)){
+		printf("Encrypt Final Error\n");
+	}
+	EVP_CIPHER_CTX_cleanup(&ctx);
+
+}
+
+void decrypt(unsigned char *message,char*key, unsigned char*decrypted){
+	EVP_CIPHER_CTX ctx;
+	//unsigned char encrypted[10000];
+	unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+	EVP_CIPHER_CTX_init(&ctx);
+	EVP_DecryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);
+	int len1;
+	if(!EVP_DecryptUpdate(&ctx,decrypted,&len1,message,strlen(message))){
+		printf("Encrypt Update Error\n");
+	}
+	if(!EVP_DecryptFinal(&ctx,decrypted+len1,&len1)){
+		printf("Encrypt Final Error\n");
+						
+	}
+	//char * mess=strtok(decrypted,"\n");
+	//decrypted=mess;
+	EVP_CIPHER_CTX_cleanup(&ctx);
+}
+
+
+
 
