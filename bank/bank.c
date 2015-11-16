@@ -42,6 +42,12 @@ Bank* bank_create()
 
     // Set up the protocol state
     // TODO set up more, as needed
+    
+    //user profile
+    
+    bank->users = list_create();
+    bank->usr_bal = hash_table_create(100);    
+    bank->usr_pin = hash_table_create(100);
 
     return bank;
 }
@@ -50,6 +56,9 @@ void bank_free(Bank *bank)
 {
     if(bank != NULL)
     {
+        list_free(bank->users);
+        hash_table_free(bank->usr_bal);
+        hash_table_free(bank->usr_pin);
         close(bank->sockfd);
         free(bank);
     }
