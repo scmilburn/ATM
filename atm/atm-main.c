@@ -15,6 +15,7 @@ int main(int argc,char*argv[])
 {
     FILE *file;
     char user_input[1000];
+    //memset(user_input,'\0',1000);
     char buffer[32];
     file=fopen(argv[1],"r");
     if(file==0){
@@ -28,19 +29,22 @@ int main(int argc,char*argv[])
 
     printf("%s", prompt);
     fflush(stdout);
-	//printf("HERE\n");
-
+	
+    //char *ans;
     
-    while (fgets(user_input, 10000,stdin) != NULL)
+    while (fgets(user_input, 1000,stdin) != NULL)
     {
+	
         char *ans= atm_process_command(atm, user_input,buffer);
+	
+	printf("answer is %s\n",ans);
 	if(!strcmp(ans,"")){
         	printf("%s", prompt);
 	}else{
-		printf("%s (%s)", prompt,ans);
+		printf("%s(%s)", prompt,ans);
 	}
+	
         fflush(stdout);
-	//printf("%s", prompt);
     }
 	return EXIT_SUCCESS;
 }

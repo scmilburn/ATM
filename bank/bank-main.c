@@ -53,7 +53,6 @@ int main(int argc, char**argv)
            bank_process_local_command(bank, sendline, strlen(sendline),users);
 	   printf("Users hash is now size: %d\n",hash_table_size(users));
            printf("%s", prompt);
-	hash_table_free(users);
            fflush(stdout);
        }
        else if(FD_ISSET(bank->sockfd, &fds))
@@ -73,7 +72,7 @@ int main(int argc, char**argv)
 		printf("Encrypt Update Error\n");
 	    }
 	    decrypt_len=len1;
-	    printf("length of decryption is %d\n",decrypt_len);
+	    //printf("length of decryption is %d\n",decrypt_len);
 	    if(!EVP_DecryptFinal(&ctx,decrypted+len1,&len1)){
 		printf("Encrypt Final Error\n");
 						
@@ -81,7 +80,8 @@ int main(int argc, char**argv)
 
 	    //printf("%s\n",decrypted);
 	    char * message=strtok(decrypted,"\n");
-	    printf("message recieved is: %s\n",message);
+	    //printf("message recieved is: %s\n",message);
+		
 
             bank_process_remote_command(bank, message, n, users,key);
        }

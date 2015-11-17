@@ -104,6 +104,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 
     //create-user <user-name> <pin> <balance>
     if (strcmp(arg1, "create-user") == 0){
+        printf("Initial users hash is size: %d\n",hash_table_size(users));
         if(n != 4){ //checks if scanf read correct number of args
        	    printf("Invalid command\n"); 
 	    return;
@@ -134,10 +135,10 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         
         //user exists
 	//printf("checking if aaa%saaaa exists\n",arg2);
-        /*if (user_exists(arg2,users)){
-            printf("Error: user %s already exists", arg2);
+        if (user_exists(arg2,users)){
+            printf("Error: user %s already exists\n", arg2);
             return;
-        }*/
+        }
         
         //pin len max
         if (strlen(arg3buff) != 4){
@@ -173,19 +174,18 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
             //unsigned int balance = strtol(arg4, NULL, 5);
         }
         
-	char *user_name_cpy=malloc(strlen(arg2));
-	memset(user_name_cpy,'\0',strlen(arg2));
-	printf("user_name copy is %s\n",user_name_cpy);
-	printf("arg2 is %s\n",arg2);
-	strcpy(user_name_cpy,arg2);
-	printf("user_name copy is %s\n",user_name_cpy);
-
 	char *user_name=malloc(strlen(arg2));
-	//printf("user_name is %s\n",user_name);
-	strcpy(user_name,arg2);
+        strcpy(user_name,arg2);
+	char *user_name_card=malloc(strlen(arg2));
+	memset(user_name_card,'\0',strlen(arg2));
+	printf("user_name card is %s\n",user_name_card);
+	printf("arg2 is %s\n",arg2);
+	strcpy(user_name_card,arg2);
+	printf("user_name card is %s\n",user_name_card);
+
 	char* temp=strcat(arg2,";");
 	char* card=strcat(temp,arg3); //info to put on card
-	char *file=strcat(user_name_cpy,".card");
+	char *file=strcat(user_name_card,".card");
 	printf("creating card file %s with information %s\n",file,card);
 	unsigned char key[32];
 	generate_key(key);
@@ -201,19 +201,17 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 		encrypt(card,key,encrypted);
 
 		fwrite(encrypted,1,sizeof(encrypted),card_file);
-		char * arr[3];
-		arr[0]=arg3;
-		arr[1]=arg4;
-		arr[2]=key;
-		hash_table_add(users, user_name, arr);
+		printf("Inserting \"%s\" => \"%s\"\n",user_name,key);
+		hash_table_add(users, user_name, key);
+
 		printf("Created user %s\n", user_name);
 		
 		
 		fclose(card_file);
 
 	}
-	free(user_name_cpy);
-	free(user_name);
+	//free(user_name_cpy);
+	//free(user_name);
 	//user_name_cpy=NULL;
 	//user_name=NULL;
         /*memset(arg1,'\0',MAX_ARG1_LEN);
@@ -342,7 +340,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTable *users,char *key)
 {
-     
+    printf("Users hash is initial size: %d\n",hash_table_size(users));
     char sendline[1000];
     command[len]=0;
     char * packet = malloc(10000);
@@ -368,11 +366,15 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
 		printf("ERROR packet not in correct format\n");
 	}
         printf("asking for authentification for %s\n",name);
-        char* val = hash_table_find(users, name);
-        if(val==NULL){
+        char* card_key = hash_table_find(users, name);
+        if(card_key==NULL){
 		printf("key not found\n");
 	}else{
-		printf("The value is %s\n",val);
+		sprintf(packet,"<authentication|%s>",card_key);
+		printf("sending packet: %s\n",packet);
+		unsigned char encrypted[10000];
+		encrypt(packet,key,encrypted);
+		bank_send(bank, encrypted, strlen(encrypted));
 	}
     }
 
@@ -468,8 +470,8 @@ int valid_user(char *user_name){
 }
 
 int user_exists(char *user_name,HashTable *users){
-    printf("Checking if %s exists\n",user_name);
-    printf("Finding -> %s\n", (hash_table_find(users, user_name) == NULL ? "Not Found" : "FAIL"));
+    //printf("Checking if %s exists\n",user_name);
+    //printf("Finding -> %s\n", (hash_table_find(users, user_name) == NULL ? "Not Found" : "FAIL"));
     if(hash_table_find(users, user_name)==NULL){
 	printf("user does not exist already\n");
 	return 0;

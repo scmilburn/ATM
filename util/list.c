@@ -93,6 +93,7 @@ void list_del(List *list, const char *key)
     }
 }
 
+
 uint32_t list_size(const List *list)
 {
     return list->size;
