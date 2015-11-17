@@ -32,9 +32,8 @@ int main(int argc, char**argv)
    }
    fread(key,sizeof(key),32,file);
    printf("bank file contents: %s\n",key);
-   
+   HashTable *users = hash_table_create(100);  
    Bank *bank = bank_create();
-   HashTable *users = hash_table_create(100);
    printf("%s", prompt);
    fflush(stdout);
 

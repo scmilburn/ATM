@@ -20,6 +20,7 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include "hash_table.h"
+#include "list.h"
 
 typedef struct _Bank
 {
@@ -27,9 +28,12 @@ typedef struct _Bank
     int sockfd;
     struct sockaddr_in rtr_addr;
     struct sockaddr_in bank_addr;
-
+    
     // Protocol state
     // TODO add more, as needed
+    List *users;
+    HashTable *usr_bal;
+    HashTable *usr_pin;
 } Bank;
 
 Bank* bank_create();
