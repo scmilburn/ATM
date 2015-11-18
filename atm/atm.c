@@ -64,6 +64,8 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 	char *str,*str1;
 	str=strtok(command,"\n");
 	char *packet = malloc(10000);
+	//printf("ATM_PROCESS\n");
+	//puts(str);
 	//balance	
 	if(strcmp(str,"balance")==0){
 		printf("asking about balance\n");
@@ -101,13 +103,13 @@ char * atm_process_command(ATM *atm, char *command,char *key)
     					int n;
 					printf("PIN?");
 					fgets(sendline, 5,stdin);
+//check size of pin
 					char *pin=strtok(sendline,"\n");	
 					sprintf(packet,"<authentication|%s>",str1);
 					printf("sending packet:%s\n",packet);
 					if(authenticate(str1, packet,atm,key,pin)){
 						strcpy(session_token,str1);
 						printf("Authenticated\n");
-						//printf("session_token is %s\n",session_token);
 					}
 				}
 				
@@ -125,7 +127,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 //CHECK IF AMOUNT IF VALID
 					sprintf(packet,"<withdraw|%s|%s>",session_token,str1);
 					printf("sending packet:%s\n",packet);
-					withdraw(packet,key,atm);
+					withdraw(packet,key,atm,str1);
 				}			
 			}
 		}else{
@@ -215,7 +217,7 @@ int authenticate(char *user_name, char *packet, ATM *atm,char *key,char *user_pi
 	return ret;
 }
 
-void withdraw(char *packet,char *key, ATM *atm){
+void withdraw(char *packet,char *key, ATM *atm, char *amt){
 	char *encrypted[10000];
 	char recvline[10000];
 	encrypt(packet,key,encrypted);
@@ -235,7 +237,9 @@ void withdraw(char *packet,char *key, ATM *atm){
 
 	printf("recieved %s\n",parsed);
 	if(strcmp(parsed,"withdraw_successful")){
-		printf("ERROR: withdrawal not successful\n");
+		printf("Insufficient funds\n");
+	}else{
+		printf("$%s dispensed\n",amt);
 	}
 }
 

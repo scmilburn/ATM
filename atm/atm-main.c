@@ -30,21 +30,27 @@ int main(int argc,char*argv[])
     printf("%s", prompt);
     fflush(stdout);
 	
-    //char *ans;
-    
+    char *ans;
+    //fgets(user_input, 1000,stdin);
     while (fgets(user_input, 1000,stdin) != NULL)
     {
-	
-        char *ans= atm_process_command(atm, user_input,buffer);
+	if(!strcmp(user_input,"\n")){ //no input so keep looping
+		continue;
+	}
+	//printf("HERE\n");
+	printf("IN ATM-MAIN COMMAND IS:: %s\n",user_input);
+        ans= atm_process_command(atm, user_input,buffer);
 	
 	printf("answer is %s\n",ans);
 	if(!strcmp(ans,"")){
         	printf("%s", prompt);
 	}else{
 		printf("%s(%s)", prompt,ans);
+		
 	}
-	
         fflush(stdout);
     }
-	return EXIT_SUCCESS;
+	//puts(fgets(user_input, 1000,stdin));
+	atm_free(atm);
+	return 0;
 }
