@@ -7,6 +7,8 @@
 #include <openssl/evp.h>
 
 static const char session_token[250];
+unsigned char encrypted[1000];
+unsigned char decrypted[1000];
 
 ATM* atm_create()
 {
@@ -64,8 +66,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 	char *str,*str1;
 	str=strtok(command,"\n");
 	char *packet = malloc(10000);
-	//printf("ATM_PROCESS\n");
-	//puts(str);
+
 	//balance	
 	if(strcmp(str,"balance")==0){
 		printf("asking about balance\n");
@@ -74,6 +75,33 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 		}else{
 			sprintf(packet,"<balance|%s>",session_token);
 			printf("sending packet:%s\n",packet);
+			//unsigned char encrypted[1000];
+			//memset(encrypted,'\0',1000);
+			char recvline[1000];
+			encrypt(packet,key,encrypted);	
+			atm_send(atm, encrypted, strlen(encrypted));
+    			int n = atm_recv(atm,recvline,1000);
+    			recvline[n]=0;
+			decrypt(recvline,key,decrypted);
+			printf("ATM recieved back %s\n",decrypted);
+			char *packet_contents[strlen(decrypted)];
+			parse_packet(decrypted,packet_contents);
+			//printf("message contents is now %s\n",packet_contents);
+			char *comm=strtok(packet_contents,"|");
+			if(strcmp(comm,"balance")){
+				printf("Invalid packet\n");
+			}else{
+				comm=strtok(NULL,"|");
+				if(strcmp(comm,session_token)){
+					printf("Invalid packet\n");
+				}else{
+					comm=strtok(NULL,"|");
+					printf("$%s\n",comm);
+
+				}
+			}
+
+			
 			
 		}
 
@@ -127,7 +155,18 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 //CHECK IF AMOUNT IF VALID
 					sprintf(packet,"<withdraw|%s|%s>",session_token,str1);
 					printf("sending packet:%s\n",packet);
-					withdraw(packet,key,atm,str1);
+					//withdraw(packet,key,atm,str1);
+					if(atoi(str1) < 0){
+						printf("Invalid command\n");
+					}else{
+					char parsed[1000];
+					send_and_recv(atm,packet,key,parsed);
+					if(strcmp(parsed,"withdraw_successful")){
+					printf("Insufficient funds\n");
+					}else{
+					printf("$%s dispensed\n",str1);
+					}
+					}
 				}			
 			}
 		}else{
@@ -168,28 +207,12 @@ int authenticate(char *user_name, char *packet, ATM *atm,char *key,char *user_pi
 		char buf[10000];
 		size_t bytes_read;
 		bytes_read=fread(buf,sizeof(buf),1,card_file);
-		//check if card file corrupted
-		char recvline[10000];
-		unsigned char encrypted[10000];
-		encrypt(packet,key,encrypted);	
-		atm_send(atm, encrypted, strlen(encrypted));
-    		int n = atm_recv(atm,recvline,10000);
-    		recvline[n]=0;
-		char decrypted[10000];
-		decrypt(recvline,key,decrypted);
-		printf("ATM recieved back %s\n",decrypted);
-		//parse_packet(decrypted);
-		char *parse=strtok(decrypted,"\n");
-		char *last = &parse[strlen(parse)-1];
-        	if(!strcmp(last,">") && parse[0]=='<'){ //this doesn't work?
-	    		printf("This is a full packet\n");
-        	}
-        	parse=&parse[1];
-	
-        	char * parsed= strtok(parse,">");
-		char *comm=strtok(parsed,"|");
-		if(strcmp(comm,"authentication")){
-			//printf("invalid packet\n");
+		char packet_contents[1000];
+		send_and_recv(atm,packet,key,packet_contents);
+		char *comm=strtok(packet_contents,"|");
+		//printf("command is %s\n",comm);
+		if(comm == NULL || strcmp(comm,"authentication")){
+			printf("invalid packet\n");
 			return 0;
 		}
 		comm = strtok(NULL,"|");
@@ -201,15 +224,21 @@ int authenticate(char *user_name, char *packet, ATM *atm,char *key,char *user_pi
 		char *pin=strtok(decrypt_card,"\n");
 		pin=strtok(decrypt_card,";");
 		//check that name matches user_name
-		pin = strtok(NULL,";");
-		//check if pin matches pin
-		if(atoi(pin)==atoi(user_pin)){
+		if(strcmp(pin,user_name)){
+			printf("user_name does not match name on card\n");
+			ret=0;
+		}
+		else{ 
+			pin = strtok(NULL,";");
+			//check if pin matches pin
+			if(atoi(pin)==atoi(user_pin)){
 			//printf("pins match!\n");
 			//session_token=user_name;
-			ret=1;	
-		}else{
+				ret=1;	
+			}else{
 			//printf("pins do not match\n");
-			ret=0;
+				ret=0;
+			}
 		}
 		fclose(card_file);
 	}
@@ -217,48 +246,36 @@ int authenticate(char *user_name, char *packet, ATM *atm,char *key,char *user_pi
 	return ret;
 }
 
-void withdraw(char *packet,char *key, ATM *atm, char *amt){
-	char *encrypted[10000];
-	char recvline[10000];
-	encrypt(packet,key,encrypted);
+void send_and_recv(ATM *atm, char *packet,char *key, char *result){
+	char recvline[1000];
+	encrypt(packet,key,encrypted);	
 	atm_send(atm, encrypted, strlen(encrypted));
-	int n = atm_recv(atm,recvline,10000);
+	memset(recvline,'\0',1000);
+    	int n = atm_recv(atm,recvline,1000);
     	recvline[n]=0;
-	char decrypted[10000];
 	decrypt(recvline,key,decrypted);
-	char *parse=strtok(decrypted,"\n");
-	char *last = &parse[strlen(parse)-1];
-        if(!strcmp(last,">") && parse[0]=='<'){ //this doesn't work?
-	    printf("This is a full packet\n");
-        }
-        parse=&parse[1];
-	
-        char * parsed= strtok(parse,">");
-
-	printf("recieved %s\n",parsed);
-	if(strcmp(parsed,"withdraw_successful")){
-		printf("Insufficient funds\n");
-	}else{
-		printf("$%s dispensed\n",amt);
-	}
+	printf("ATM recieved back %s\n",decrypted);
+	//char *packet_contents[strlen(decrypted)];
+	parse_packet(decrypted,result);
 }
 
 void parse_packet(char *packet, char *temp){
 	char *parse=strtok(packet,"\n");
-	char *last = &parse[strlen(parse)-1];
-        if(!strcmp(last,">") && parse[0]=='<'){
-	    printf("This is a full packet\n");
-        }
-        parse=&parse[1];
-	
-        char * t= strtok(parse,">");
-	temp=t;
+	//char t[100];
+	int i=1;
+	int flag=0;
+	while(parse[i]!='>' && i<strlen(parse)){
+		temp[i-1]=parse[i];	
+		i++;	
+	}
+        //printf("packet contents: %s\n",t);
+	temp[i-1]='\0';
 	
 }
 
 void encrypt(char *message,char*key,unsigned char*encrypted){
 	EVP_CIPHER_CTX ctx;
-	//unsigned char encrypted[10000];
+	memset(encrypted,'\0',1000);
 	unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	EVP_CIPHER_CTX_init(&ctx);
 	EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);
@@ -275,7 +292,7 @@ void encrypt(char *message,char*key,unsigned char*encrypted){
 
 void decrypt(unsigned char *message,char*key, unsigned char*decrypted){
 	EVP_CIPHER_CTX ctx;
-	//unsigned char encrypted[10000];
+	memset(decrypted,'\0',1000);
 	unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	EVP_CIPHER_CTX_init(&ctx);
 	EVP_DecryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);

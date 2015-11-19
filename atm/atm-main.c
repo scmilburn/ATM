@@ -34,7 +34,7 @@ int main(int argc,char*argv[])
     //fgets(user_input, 1000,stdin);
     while (fgets(user_input, 1000,stdin) != NULL)
     {
-	if(!strcmp(user_input,"\n")){ //no input so keep looping
+	if(!strcmp(user_input,"\n")){ //no input so keep looping 		
 		continue;
 	}
 	//printf("HERE\n");

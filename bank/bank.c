@@ -233,14 +233,6 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 	//free(user_name);
 	//user_name_cpy=NULL;
 	//user_name=NULL;
-        /*memset(arg1,'\0',MAX_ARG1_LEN);
-        memset(arg2,'\0',MAX_ARG2_LEN);
-	memset(arg3,'\0',MAX_ARG3_LEN);
-	memset(arg4,'\0',MAX_ARG4_LEN); 
-	memset(file,'\0',strlen(file));
-	memset(card,'\0',strlen(card));
-	memset(temp,'\0',strlen(temp)); 
-    */
     }
     //deposit <user-name> <amt> 
     /*else if (strcmp(arg1, "deposit") == 0){
@@ -393,19 +385,16 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
     return;
 }*/else{
     printf("Invalid command\n");
-    memset(arg1,'\0',MAX_ARG1_LEN);
-    memset(arg2,'\0',MAX_ARG2_LEN);
-    memset(arg3,'\0',MAX_ARG3_LEN);
-    memset(arg4,'\0',MAX_ARG4_LEN);
-}        
+    }        
 }
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTable *users,char *key,HashTable *balance)
 {
     printf("Users hash is initial size: %d\n",hash_table_size(users));
     char sendline[1000];
+    unsigned char encrypted[1000];
     command[len]=0;
-    char * packet = malloc(10000);
+    char * packet = malloc(1000);
     memset(packet,'\0',strlen(packet));
 
     printf("Received: %s\n",command);
@@ -434,7 +423,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
 	}else{
 		sprintf(packet,"<authentication|%s>",card_key);
 		printf("sending packet: %s\n",packet);
-		unsigned char encrypted[10000];
+		
 		encrypt(packet,key,encrypted);
 		bank_send(bank, encrypted, strlen(encrypted));
 	}
@@ -460,74 +449,34 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
 	//printf("Withdrawing %s from %s\n",comm,user);
 	int val = hash_table_find(balance,user);
 	int withdraw_amt=atoi(comm);
-	//printf("Withdrawing %d from total:%d\n",withdraw_amt,val);
+	int new_balance=val-withdraw_amt;
 	if(withdraw_amt < 0 || withdraw_amt > val){
 		strcpy(packet,"<Insufficient funds>");
         	printf("sending packet: %s\n",packet);
 	}else{
 		hash_table_del(balance,user);
-		hash_table_add(balance,user,(val-withdraw_amt));
+		hash_table_add(balance,user,new_balance);
+		printf("New hash value is %d\n",hash_table_find(balance,user));
 	        strcpy(packet,"<withdraw_successful>");
        		printf("sending packet: %s\n",packet);
 
 	}
-        char encrypted[10000];
         encrypt(packet,key,encrypted);
         bank_send(bank, encrypted, strlen(encrypted));
     }
 
-    //balance <balance|"name">
+    //balance <balance|"name"|amt>
     else if (!strcmp(comm,"balance")){
         comm = strtok(NULL,"|");
-        char *name=comm;
-        if(name ==NULL){
+        if(comm ==NULL){
             printf("ERROR packet not in correct format\n");
         }
+	printf("Looking for balance for %s\n It is %d\n",comm,hash_table_find(balance,comm));
+	sprintf(packet,"<balance|%s|%d>",comm,hash_table_find(balance,comm));
+       	printf("sending packet: %s\n",packet);
+        encrypt(packet,key,encrypted);
+        bank_send(bank, encrypted, strlen(encrypted));
     }
-
-
-    //bank_send(bank, encrypted, strlen(encrypted));
-
-    /*   
-         if (strcmp(arg1, "begin-session") == 0){
-         if (successful login){
-         if (strcmp(arg1, "withdraw") == 0){ 
-
-         }else if (strcmp(arg1, "balance") == 0){
-    //check if valid
-    if (!valid_balance){
-    printf("Usage: balance");
-    }else{
-    printf("$%d", get_balance);
-    }
-    }else if (strcmp(arg1, "end-session") == 0){
-    printf("User logged out\n");   
-    }else{
-    bank_send(bank, failure, strlen(failure));
-    printf("atm sent an invalid command:\n");
-    fputs(command, stdout);
-    }
-    }else{
-    printf("login failure");
-    }
-    }else if (strcmp(arg1, "withdraw") == 0){
-    printf("No user logged in\n");    
-    }else if (strcmp(arg1, "balance") == 0){
-    printf("No user logged in\n");   
-    }else if (strcmp(arg1, "end-session") == 0){
-    printf("No user logged in\n");   
-    }else{
-    bank_send(bank, failure, strlen(failure));
-    printf("atm sent an invalid command:\n");
-    fputs(command, stdout);
-    }
-
-
-    //encrypt sendline before sending it
-    bank_send(bank, sendline, strlen(sendline));
-    printf("Received the following:\n");
-    fputs(command, stdout);
-    */
 
     free(packet);
 }
@@ -598,7 +547,7 @@ int all_digits(char *number){
 }
 void encrypt(char *message,char*key,unsigned char*encrypted){
     EVP_CIPHER_CTX ctx;
-    //unsigned char encrypted[10000];
+    memset(encrypted,'\0',1000);
     unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     EVP_CIPHER_CTX_init(&ctx);
     EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);

@@ -21,6 +21,7 @@ int main(int argc, char**argv)
    char sendline[10000];
    char recvline[10000];
    char key[32];
+   unsigned char decrypted[1000];
    
    FILE *file;
     //memset(recvline,'\0',10000);
@@ -59,12 +60,13 @@ int main(int argc, char**argv)
        else if(FD_ISSET(bank->sockfd, &fds))
        {
 	   //printf("socket successfully created\n");
-           n = bank_recv(bank, recvline, 10000);
+	   memset(recvline,'\0',1000);
+	   memset(decrypted,'\0',1000);
+
+           n = bank_recv(bank, recvline, 1000);
 
             EVP_CIPHER_CTX ctx;
-	    unsigned char decrypted[10000];
 	    int decrypt_len;
-	    memset(decrypted,'\0',strlen(decrypted));
 	    unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	    EVP_CIPHER_CTX_init(&ctx);
 	    EVP_DecryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);
