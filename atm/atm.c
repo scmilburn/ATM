@@ -96,8 +96,11 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 					printf("Invalid packet\n");
 				}else{
 					comm=strtok(NULL,"|");
+					if(comm==NULL){
+						printf("Invalid packet\n");
+					}else{
 					printf("$%s\n",comm);
-
+					}
 				}
 			}
 

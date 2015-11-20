@@ -82,7 +82,10 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
     //creating larger buffers to prevent overflow
     char arg1[MAX_ARG1_LEN], arg2[MAX_ARG2_LEN], arg3[MAX_ARG3_LEN], arg4[MAX_ARG4_LEN];
     char arg1buff[MAX_LINE_LEN], arg2buff[MAX_LINE_LEN], arg3buff[MAX_LINE_LEN], arg4buff[MAX_LINE_LEN];
-
+	memset(arg1,'\0',MAX_ARG1_LEN);	
+	memset(arg2,'\0',MAX_ARG2_LEN);
+	memset(arg3,'\0',MAX_ARG3_LEN);
+	memset(arg4,'\0',MAX_ARG4_LEN);
 
     //full command too long
     if (strlen(command) >= MAX_LINE_LEN){
@@ -184,29 +187,22 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
             //unsigned int balance = strtol(arg4, NULL, 5);
         }
 
-        char *user_name_cpy=malloc(strlen(arg2));
-        memset(user_name_cpy,'\0',strlen(arg2));
-        printf("user_name copy is %s\n",user_name_cpy);
-        printf("arg2 is %s\n",arg2);
-        strcpy(user_name_cpy,arg2);
-        printf("user_name copy is %s\n",user_name_cpy);
-
         char *user_name=malloc(strlen(arg2));
-        strcpy(user_name,arg2);
+	//char user_name[strlen(arg2)];
+	//char user_name_card[strlen(arg2)];
 	char *user_name_card=malloc(strlen(arg2));
+	memset(user_name,'\0',strlen(arg2));
 	memset(user_name_card,'\0',strlen(arg2));
-	printf("user_name card is %s\n",user_name_card);
-	printf("arg2 is %s\n",arg2);
+        strcpy(user_name,arg2);
 	strcpy(user_name_card,arg2);
-	printf("user_name card is %s\n",user_name_card);
-
+	//printf("user_name card is %s\n",user_name_card);
 	char* temp=strcat(arg2,";");
 	char* card=strcat(temp,arg3); //info to put on card
 	char *file=strcat(user_name_card,".card");
-	printf("creating card file %s with information %s\n",file,card);
-	unsigned char key[32];
+	//printf("creating card file %s with information %s\n",file,card);
+	unsigned char *key=malloc(32);
 	generate_key(key);
-	printf("The key for this card file is %s\n",key);
+	//printf("The key for this card file is %s\n",key);
 	FILE *card_file=fopen(file,"w");
 	if (card_file==0){
 		printf("Error creating card file for user %s\n",user_name);
@@ -220,16 +216,17 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 		fwrite(encrypted,1,sizeof(encrypted),card_file);
 		printf("Inserting \"%s\" => \"%s\"\n",user_name,key);
 		hash_table_add(users, user_name, key);
-		printf("Inserting \"%s\" => \"%s\"\n",user_name,arg4);
- 		hash_table_add(balance,user_name,atoi(arg4));
+		unsigned char temp=atoi(arg4);
+		printf("Inserting \"%s\" => \"%u\"\n",user_name,(unsigned int)temp);
+ 		hash_table_add(balance,user_name,(unsigned int)temp);
 
 		printf("Created user %s\n", user_name);
-		
+		//memset(arg2,'\0',strlen(arg2));
 		
 		fclose(card_file);
-
+		free(user_name_card);
 	}
-	//free(user_name_cpy);
+	//free(user_name_card);
 	//free(user_name);
 	//user_name_cpy=NULL;
 	//user_name=NULL;
@@ -388,9 +385,11 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
     }        
 }
 
-void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTable *users,char *key,HashTable *balance)
+void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTable *users, char *key, HashTable *balance)
 {
+    printf("bob's balance is %u\n",(unsigned int) hash_table_find(balance,"bob"));
     printf("Users hash is initial size: %d\n",hash_table_size(users));
+    printf("Balance hash is initial size: %d\n",hash_table_size(balance));
     char sendline[1000];
     unsigned char encrypted[1000];
     command[len]=0;
@@ -412,12 +411,13 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
     //authentication <authentication|"name">
     if (!strcmp(comm,"authentication")){
         comm = strtok(NULL,"|");
-        char *name=comm;
-        if(name ==NULL){
+        //char *name=comm;
+        if(comm ==NULL){
             printf("ERROR packet not in correct format\n");
         }
-        printf("asking for authentification for %s\n",name);
-        char* card_key = hash_table_find(users, name);
+        printf("asking for authentification for %s\n",comm);
+        char* card_key = hash_table_find(users, comm);
+	printf("The card_key for %s is %s\n",comm,card_key);
         if(card_key==NULL){
 		printf("key not found\n");
 	}else{
@@ -427,7 +427,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
 		encrypt(packet,key,encrypted);
 		bank_send(bank, encrypted, strlen(encrypted));
 	}
-        char* val = hash_table_find(users, name);
+        char* val = hash_table_find(users, comm);
         if(val==NULL){
             printf("key not found\n");
         }else{
@@ -446,17 +446,23 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
 	if(comm ==NULL){
             printf("ERROR packet not in correct format\n");
         }
-	//printf("Withdrawing %s from %s\n",comm,user);
-	int val = hash_table_find(balance,user);
-	int withdraw_amt=atoi(comm);
-	int new_balance=val-withdraw_amt;
+	printf("Withdrawing %s from %s\n",comm,user);
+	unsigned int val = (unsigned int) hash_table_find(balance,user);
+	unsigned char temp=atoi(comm);
+	unsigned int withdraw_amt=(unsigned int)temp;
 	if(withdraw_amt < 0 || withdraw_amt > val){
 		strcpy(packet,"<Insufficient funds>");
         	printf("sending packet: %s\n",packet);
 	}else{
+		unsigned int new_balance = malloc(sizeof(unsigned int));
+		new_balance=val-withdraw_amt;
+		/*int length = strlen(hash_table_find(balance,user));
+		char buf[length];
+		memset(buf,'\0',length);
+		sprintf(buf,"%d",new_balance);*/
 		hash_table_del(balance,user);
 		hash_table_add(balance,user,new_balance);
-		printf("New hash value is %d\n",hash_table_find(balance,user));
+		printf("New hash value is %u\n",(unsigned int)hash_table_find(balance,user));
 	        strcpy(packet,"<withdraw_successful>");
        		printf("sending packet: %s\n",packet);
 
@@ -471,8 +477,9 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         if(comm ==NULL){
             printf("ERROR packet not in correct format\n");
         }
-	printf("Looking for balance for %s\n It is %d\n",comm,hash_table_find(balance,comm));
-	sprintf(packet,"<balance|%s|%d>",comm,hash_table_find(balance,comm));
+	unsigned int bal = (unsigned int)hash_table_find(balance,comm);
+	printf("Looking for balance for %s\n It is %u\n",comm,bal);
+	sprintf(packet,"<balance|%s|%u>",comm,bal);
        	printf("sending packet: %s\n",packet);
         encrypt(packet,key,encrypted);
         bank_send(bank, encrypted, strlen(encrypted));
@@ -501,8 +508,6 @@ int valid_user(char *user_name){
 }
 
 int user_exists(char *user_name,HashTable *users){
-    //printf("Checking if %s exists\n",user_name);
-    //printf("Finding -> %s\n", (hash_table_find(users, user_name) == NULL ? "Not Found" : "FAIL"));
     if(hash_table_find(users, user_name)==NULL){
         printf("user does not exist already\n");
         return 0;

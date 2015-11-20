@@ -50,6 +50,7 @@ int main(int argc, char**argv)
        if(FD_ISSET(0, &fds))
        {
 	   printf("listening for local commands only\n");
+	    memset(recvline,'\0',10000);
            fgets(sendline, 10000,stdin);
            bank_process_local_command(bank, sendline, strlen(sendline),users,balance);
 	   printf("Users hash is now size: %d\n",hash_table_size(users));
@@ -59,7 +60,6 @@ int main(int argc, char**argv)
        }
        else if(FD_ISSET(bank->sockfd, &fds))
        {
-	   //printf("socket successfully created\n");
 	   memset(recvline,'\0',1000);
 	   memset(decrypted,'\0',1000);
 
@@ -75,7 +75,6 @@ int main(int argc, char**argv)
 		printf("Decrypt Update Error\n");
 	    }
 	    decrypt_len=len1;
-	    //printf("length of decryption is %d\n",decrypt_len);
 	    if(!EVP_DecryptFinal(&ctx,decrypted+len1,&len1)){
 		printf("Decrypt Final Error\n");
 						
@@ -83,13 +82,13 @@ int main(int argc, char**argv)
 
 	    printf("%s\n",decrypted);
 	    char * message=strtok(decrypted,"\n");
-	    //printf("message recieved is: %s\n",message);
 
             bank_process_remote_command(bank, message, n, users,key,balance);
+ 	    
       	    printf("%s", prompt);
             fflush(stdout);
-	 }
-	
+	}
+	printf("bob's balance is now %u\n",(unsigned int)hash_table_find(balance,"bob"));
    }
    hash_table_free(balance);
    hash_table_free(users); //never executes
