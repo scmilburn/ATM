@@ -9,7 +9,7 @@
 
 int main(int argc, char* argv[]){
     FILE *bank_file, *atm_file;
-    char *bank, *atm, *argcpy;
+    char *bank_path, *atm_path;
     int n;
     time_t t;
     
@@ -17,20 +17,26 @@ int main(int argc, char* argv[]){
         printf("Usage: init <filename>\n");
         return 62;
     }
+     
+    atm_path = malloc(strlen(argv[1]) + strlen(".atm") + 1);
+    bank_path = malloc(strlen(argv[1]) + strlen(".bank") + 1); 
     
-    
-    argcpy=malloc(strlen(argv[1]));
-    strcpy(argcpy,argv[1]); //////FIX 
-    bank = strcat(argv[1],".bank");
-    atm = strcat(argcpy,".atm");
+    strcat(bank_path, argv[1]);
+    strcat(bank_path, ".bank");
+    strcat(atm_path, argv[1]);
+    strcat(atm_path, ".atm");
+   
     bank_file=fopen(bank,"r");
     atm_file=fopen(atm,"r");
     if(bank_file == 0 && atm_file == 0){ //file does not exist
-        bank_file=fopen(bank,"w");
-        atm_file=fopen(atm,"w");
-        char key[KEYLENGTH];
-        const char charset[]="abcdefghijklmnopqrstuvwxyz";
+        if ((bank_file=fopen(bank_path,"w")) == NULL || (atm_file=fopen(atm_path,"w")) == NULL){
+            printf("Error creating initialization files\n");
+            return 64;
+        }
         
+        //KEY GENERATION
+        char key[KEYLENGTH];
+        const char charset[]="abcdefghijklmnopqrstuvwxyz"; 
         srand((unsigned)time(&t));
         for (n = 0; n < KEYLENGTH; n++){
             int k = rand() % 26;
@@ -47,11 +53,15 @@ int main(int argc, char* argv[]){
         fclose(atm_file);
         fclose(bank_file);
         //printf("file does not exist: Good\n");
-        free(argcpy);
+        free(bank_path);
+        free(atm_path);
+
+        printf("Successfully initialized bank state\n");
         return 0;
     }else{
         printf("Error: one of the files already exists\n");
-        free(argcpy);       
+        free(bank_path);
+        free(atm_path);       
         return 63;
     }
 }
