@@ -8,12 +8,11 @@
 #include <time.h>
 #include <openssl/evp.h>
 
-
-#define MAX_ARG1_LEN 12 //cmd
-#define MAX_ARG2_LEN 251 //usrname
-#define MAX_ARG3_LEN 6 //pin or amt
-#define MAX_ARG4_LEN 6 //unsigned int max 65535
-#define MAX_LINE_LEN 1001
+#define MAX_ARG1_LEN 11 //cmd
+#define MAX_ARG2_LEN 250 //usrname
+#define MAX_ARG3_LEN 5 //pin or amt
+#define MAX_ARG4_LEN 5 //unsigned int max 65535
+#define MAX_LINE_LEN 1000
 #define TRUE 1;
 #define FALSE 0;
 
@@ -80,20 +79,20 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len)
 void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable *users,HashTable *balance)
 {
     //creating larger buffers to prevent overflow
-    char arg1[MAX_ARG1_LEN], arg2[MAX_ARG2_LEN], arg3[MAX_ARG3_LEN], arg4[MAX_ARG4_LEN];
+    char arg1[MAX_ARG1_LEN+1], arg2[MAX_ARG2_LEN+1], arg3[MAX_ARG3_LEN+1], arg4[MAX_ARG4_LEN+1];
     char arg1buff[MAX_LINE_LEN], arg2buff[MAX_LINE_LEN], arg3buff[MAX_LINE_LEN], arg4buff[MAX_LINE_LEN];
 
 
-    //full command too long
+    //checking command length before splitting
     if (strlen(command) >= MAX_LINE_LEN){
         printf("Invalid command\n");
         return;
     }
 
-    int n = sscanf(command, "%s %s %s %s", arg1buff, arg2buff, arg3buff, arg4buff);
+    size_t args_num = sscanf(command, "%s %s %s %s", arg1buff, arg2buff, arg3buff, arg4buff);
 
     //null input
-    if (strlen(arg1buff) < 1 || n==1){
+    if (strlen(arg1buff) < 1 || args_num==1){
         printf("Empty value\n");
         printf("Invalid command\n");
         return;
@@ -110,171 +109,162 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 
     // MAIN BRANCHING BASED ON ARG1
 
-
     //create-user <user-name> <pin> <balance>
-    if (strcmp(arg1, "create-user") == 0){
-        printf("Initial users hash is size: %d\n",hash_table_size(users));
-        if(n != 4){ //checks if scanf read correct number of args
-            printf("Invalid command\n"); 
-            return;
+    if (args_num == 4){
+        if (strcmp(arg1, "create-user") == 0){
+            printf("Initial users hash is size: %d\n", hash_table_size(users));
+
+            //empty
+            if (strlen(arg2buff) < 1 || strlen(arg3buff) < 1 || strlen(arg4buff) < 1){ 
+                printf("empty arguments\n");
+                printf("Usage: create-user <user-name> <pin> <balance>\n");
+                return;
+            }
+
+            //username max 
+            if (strlen(arg2buff) > MAX_ARG2_LEN){  
+                printf("username length too large\n");
+                printf("Usage: create-user <user-name> <pin> <balance>\n");
+                return;
+            }else{
+                strcpy(arg2, arg2buff);
+            }
+
+            //valid user name
+            if (!valid_user(arg2)){
+                printf("user not valid\n");
+                printf("Usage: create-user <user-name> <pin> <balance>\n");
+                return;
+            }
+            
+            //user exists?
+            if (user_exists(arg2, users)){
+                printf("Error: user %s already exists\n", arg2);
+                return;
+            }
+
+            //pin len max
+            if (strlen(arg3buff) != 4){
+                printf("pin wrong length\n");
+                printf("Usage: create-user <user-name> <pin> <balance>\n");
+                return;
+            }else{
+                strcpy(arg3, arg3buff);    
+            } 
+
+            //valid pin
+            if(!valid_pin(arg3)){
+                printf("not valid pin\n");
+                printf("Usage: create-user <user-name> <pin> <balance>\n");
+                return;
+            }
+
+            //balance max
+            if (strlen(arg4buff) > MAX_ARG4_LEN){
+                printf("balance too large");
+                printf("Usage: create-user <user-name> <pin> <balance>\n");
+                return;
+            }else{
+                strcpy(arg4, arg4buff);
+            }
+
+            //valid balance
+            if (!valid_balance(arg4)){
+                printf("balance not valid\n");
+                printf("Usage: create-user <user-name> <pin> <balance>\n");
+                return;
+            } else{
+                //unsigned int balance = strtol(arg4, NULL, 5);
+            }
+
+            //CREATING CARD
+
+            //CARD FILENAME
+            //username.card
+            int fn_len = strlen(arg2) + strlen(".card") + 1;
+            char file[fn_len];
+            memset(file, '\0', fn_len);
+            strncpy(file, arg2, strlen(arg2));
+            strncat(file, ".card", strlen(".card"));
+            
+            //getting key and making file
+            printf("creating card file %s\n",file);
+            unsigned char key[32];
+            generate_key(key);
+            printf("The key for this card file is %s\n",key);
+            FILE *card_file=fopen(file,"w");
+            
+            if (card_file==0){
+                printf("Error creating card file for user %s\n", arg2);
+                remove(card_file);
+
+            }else{
+                //encrypt with key and write to card file
+                //add encryption to hashtable
+                //add user to hashtable
+                
+                //CARD CONTENTS
+                //username;
+                char* temp=strcat(arg2,";");
+                //username;pin
+                char* card=strcat(temp,arg3);
+                printf("THE CARD CONTENTS %s\n", card);
+
+                unsigned char encrypted[10000];
+                encrypt(card,key,encrypted);
+
+                fwrite(encrypted,1,sizeof(encrypted),card_file);
+                printf("Inserting \"%s\" => \"%s\"\n", arg2, key);
+                hash_table_add(users, arg2, key);
+                printf("Inserting \"%s\" => \"%s\"\n", arg2,arg4);
+                hash_table_add(balance, arg2, atoi(arg4));
+
+                printf("Created user %s\n", arg2);
+                fclose(card_file);
+            }
         }
-
-        //empty
-        if (strlen(arg2buff) < 1 || strlen(arg3buff) < 1 || strlen(arg4buff) < 1){ 
-            printf("empty arguments\n");
-            printf("Usage: create-user <user-name> <pin> <balance>\n");
-            return;
-        }
-
-        //username max 
-        if (strlen(arg2buff) > 250){ //shouldn't it be max arg2 
-            printf("username length too large\n");
-            printf("Usage: create-user <user-name> <pin> <balance>\n");
-            return;
-        }else{
-            strcpy(arg2, arg2buff);
-        }
-
-        //valid user name
-        if (!valid_user(arg2)){
-            printf("user not valid\n");
-            printf("Usage: create-user <user-name> <pin> <balance>\n");
-            return;
-        }
-
-        //user exists
-
-	//printf("checking if aaa%saaaa exists\n",arg2);
-        if (user_exists(arg2,users)){
-            printf("Error: user %s already exists\n", arg2);
-            return;
-        }
-       
-        //pin len max
-        if (strlen(arg3buff) != 4){
-            printf("pin not long enough\n");
-            printf("Usage: create-user <user-name> <pin> <balance>\n");
-            return;
-        }else{
-            strcpy(arg3, arg3buff);    
-        } 
-
-        //valid pin
-        if(!valid_pin(arg3)){
-            printf("not valid pin\n");
-            printf("Usage: create-user <user-name> <pin> <balance>\n");
-            return;
-        }
-
-        //balance max
-        if (strlen(arg4buff) > 5){
-            printf("balance too large");
-            printf("Usage: create-user <user-name> <pin> <balance>\n");
-            return;
-        }else{
-            strcpy(arg4, arg4buff);
-        }
-
-        //valid balance
-        if (!valid_balance(arg4)){
-            printf("balance not valid\n");
-            printf("Usage: create-user <user-name> <pin> <balance>\n");
-            return;
-        } else{
-            //unsigned int balance = strtol(arg4, NULL, 5);
-        }
-
-        char *user_name_cpy=malloc(strlen(arg2));
-        memset(user_name_cpy,'\0',strlen(arg2));
-        printf("user_name copy is %s\n",user_name_cpy);
-        printf("arg2 is %s\n",arg2);
-        strcpy(user_name_cpy,arg2);
-        printf("user_name copy is %s\n",user_name_cpy);
-
-        char *user_name=malloc(strlen(arg2));
-        strcpy(user_name,arg2);
-	char *user_name_card=malloc(strlen(arg2));
-	memset(user_name_card,'\0',strlen(arg2));
-	printf("user_name card is %s\n",user_name_card);
-	printf("arg2 is %s\n",arg2);
-	strcpy(user_name_card,arg2);
-	printf("user_name card is %s\n",user_name_card);
-
-	char* temp=strcat(arg2,";");
-	char* card=strcat(temp,arg3); //info to put on card
-	char *file=strcat(user_name_card,".card");
-	printf("creating card file %s with information %s\n",file,card);
-	unsigned char key[32];
-	generate_key(key);
-	printf("The key for this card file is %s\n",key);
-	FILE *card_file=fopen(file,"w");
-	if (card_file==0){
-		printf("Error creating card file for user %s\n",user_name);
-	}else{
-		//encrypt with key and write to card file
-		//add encryption to hash
-		//add user to hash
-		unsigned char encrypted[10000];
-		encrypt(card,key,encrypted);
-
-		fwrite(encrypted,1,sizeof(encrypted),card_file);
-		printf("Inserting \"%s\" => \"%s\"\n",user_name,key);
-		hash_table_add(users, user_name, key);
-		printf("Inserting \"%s\" => \"%s\"\n",user_name,arg4);
- 		hash_table_add(balance,user_name,atoi(arg4));
-
-		printf("Created user %s\n", user_name);
-		
-		
-		fclose(card_file);
-
-	}
-	//free(user_name_cpy);
-	//free(user_name);
-	//user_name_cpy=NULL;
-	//user_name=NULL;
     }
     //deposit <user-name> <amt> 
     /*else if (strcmp(arg1, "deposit") == 0){
-        //user-name;
-        char* temp=strcat(arg2,";");
-        
-        //user-name;pin  
-        char* card=strcat(temp,arg3); //info to put on card
-        
-        //user-name.card
-        char *file=strcat(user_name_cpy,".card");
-        printf("creating card file %s with information %s\n",file,card);
-        unsigned char key[32];
-        generate_key(key);
-        printf("The key for this card file is %s\n",key);
-        
-        FILE *card_file=fopen(file,"w");
-        if (card_file==0){
-            printf("Error creating card file for user %s\n", user_name);
-        }else{
-            //encrypt with key and write to card file
-            //add encryption to hash
-            //add user to hash
-            unsigned char encrypted[10000];
-            encrypt(card,key,encrypted);
+    //user-name;
+    char* temp=strcat(arg2,";");
 
-            fwrite(encrypted,1,sizeof(encrypted),card_file);
-            char * arr[3];
-            arr[0]=arg3;
-            arr[1]=arg4;
-            arr[2]=key;
-            hash_table_add(users, user_name, arr);
-            printf("Created user %s\n", user_name);
+    //user-name;pin  
+    char* card=strcat(temp,arg3); //info to put on card
+
+    //user-name.card
+    char *file=strcat(user_name_cpy,".card");
+    printf("creating card file %s with information %s\n",file,card);
+    unsigned char key[32];
+    generate_key(key);
+    printf("The key for this card file is %s\n",key);
+
+    FILE *card_file=fopen(file,"w");
+    if (card_file==0){
+    printf("Error creating card file for user %s\n", user_name);
+    }else{
+    //encrypt with key and write to card file
+    //add encryption to hash
+    //add user to hash
+    unsigned char encrypted[10000];
+    encrypt(card,key,encrypted);
+
+    fwrite(encrypted,1,sizeof(encrypted),card_file);
+    char * arr[3];
+    arr[0]=arg3;
+    arr[1]=arg4;
+    arr[2]=key;
+    hash_table_add(users, user_name, arr);
+    printf("Created user %s\n", user_name);
 
 
-            fclose(card_file);
+    fclose(card_file);
 
-        }
-        free(user_name_cpy);
-        free(user_name);
-        //user_name_cpy=NULL;
-        //user_name=NULL;
+    }
+    free(user_name_cpy);
+    free(user_name);
+    //user_name_cpy=NULL;
+    //user_name=NULL;
 
     }
     //deposit <user-name> <amt> 
@@ -385,7 +375,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
     return;
 }*/else{
     printf("Invalid command\n");
-    }        
+}        
 }
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTable *users,char *key,HashTable *balance)
@@ -419,14 +409,14 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         printf("asking for authentification for %s\n",name);
         char* card_key = hash_table_find(users, name);
         if(card_key==NULL){
-		printf("key not found\n");
-	}else{
-		sprintf(packet,"<authentication|%s>",card_key);
-		printf("sending packet: %s\n",packet);
-		
-		encrypt(packet,key,encrypted);
-		bank_send(bank, encrypted, strlen(encrypted));
-	}
+            printf("key not found\n");
+        }else{
+            sprintf(packet,"<authentication|%s>",card_key);
+            printf("sending packet: %s\n",packet);
+
+            encrypt(packet,key,encrypted);
+            bank_send(bank, encrypted, strlen(encrypted));
+        }
         char* val = hash_table_find(users, name);
         if(val==NULL){
             printf("key not found\n");
@@ -442,25 +432,25 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         if(comm ==NULL){
             printf("ERROR packet not in correct format\n");
         }
-	comm = strtok(NULL,"|");
-	if(comm ==NULL){
+        comm = strtok(NULL,"|");
+        if(comm ==NULL){
             printf("ERROR packet not in correct format\n");
         }
-	//printf("Withdrawing %s from %s\n",comm,user);
-	int val = hash_table_find(balance,user);
-	int withdraw_amt=atoi(comm);
-	int new_balance=val-withdraw_amt;
-	if(withdraw_amt < 0 || withdraw_amt > val){
-		strcpy(packet,"<Insufficient funds>");
-        	printf("sending packet: %s\n",packet);
-	}else{
-		hash_table_del(balance,user);
-		hash_table_add(balance,user,new_balance);
-		printf("New hash value is %d\n",hash_table_find(balance,user));
-	        strcpy(packet,"<withdraw_successful>");
-       		printf("sending packet: %s\n",packet);
+        //printf("Withdrawing %s from %s\n",comm,user);
+        int val = hash_table_find(balance,user);
+        int withdraw_amt=atoi(comm);
+        int new_balance=val-withdraw_amt;
+        if(withdraw_amt < 0 || withdraw_amt > val){
+            strcpy(packet,"<Insufficient funds>");
+            printf("sending packet: %s\n",packet);
+        }else{
+            hash_table_del(balance,user);
+            hash_table_add(balance,user,new_balance);
+            printf("New hash value is %d\n",hash_table_find(balance,user));
+            strcpy(packet,"<withdraw_successful>");
+            printf("sending packet: %s\n",packet);
 
-	}
+        }
         encrypt(packet,key,encrypted);
         bank_send(bank, encrypted, strlen(encrypted));
     }
@@ -471,9 +461,9 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         if(comm ==NULL){
             printf("ERROR packet not in correct format\n");
         }
-	printf("Looking for balance for %s\n It is %d\n",comm,hash_table_find(balance,comm));
-	sprintf(packet,"<balance|%s|%d>",comm,hash_table_find(balance,comm));
-       	printf("sending packet: %s\n",packet);
+        printf("Looking for balance for %s\n It is %d\n",comm,hash_table_find(balance,comm));
+        sprintf(packet,"<balance|%s|%d>",comm,hash_table_find(balance,comm));
+        printf("sending packet: %s\n",packet);
         encrypt(packet,key,encrypted);
         bank_send(bank, encrypted, strlen(encrypted));
     }
