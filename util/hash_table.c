@@ -86,7 +86,7 @@ uint32_t hash(const char * data, int len)
 void hash_table_add(HashTable *ht, char *key, void *val)
 {
     uint32_t idx = hash(key, strlen(key)) % ht->num_bins;
-	printf("%zu\n",idx);
+	//printf("%zu\n",idx);
 
     // Do not permit duplicates
     if(list_find(ht->bins[idx], key) == NULL)
@@ -111,6 +111,7 @@ void hash_table_del(HashTable *ht, const char *key)
     ht->size -= list_size(ht->bins[idx]);
     list_del(ht->bins[idx], key);
     ht->size += list_size(ht->bins[idx]);
+    free(key);
 }
 
 uint32_t hash_table_size(const HashTable *ht)
