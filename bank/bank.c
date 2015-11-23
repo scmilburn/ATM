@@ -91,14 +91,14 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 
     // null input
     if (strlen(arg1buff) < 1 || args_num==1){
-        printf("Empty value\n");
+        //printf("Empty value\n");
         printf("Invalid command\n");
         return;
     }
 
     //check if args are correct len
     if (strlen(arg1buff) > MAX_ARG1_LEN){
-        printf("args too long\n");
+        //printf("args too long\n");
         printf("Invalid command\n");
         return;
     }else{
@@ -112,18 +112,18 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
     if (args_num == 4){
         if (strcmp(arg1, "create-user") == 0){
 
-            printf("Initial users hash is size: %d\n",hash_table_size(users));
+            //printf("Initial users hash is size: %d\n",hash_table_size(users));
 
             //empty
             if (strlen(arg2buff) < 1 || strlen(arg3buff) < 1 || strlen(arg4buff) < 1){ 
-                printf("empty arguments\n");
+                //printf("empty arguments\n");
                 printf("Usage: create-user <user-name> <pin> <balance>\n");
                 return;
             }
 
             //username max 
             if (strlen(arg2buff) > MAX_ARG2_LEN){  
-                printf("username length too large\n");
+                //printf("username length too large\n");
                 printf("Usage: create-user <user-name> <pin> <balance>\n");
                 return;
             }else{
@@ -132,7 +132,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 
             //valid user name
             if (!valid_user(arg2)){
-                printf("user not valid\n");
+                //printf("user not valid\n");
                 printf("Usage: create-user <user-name> <pin> <balance>\n");
                 return;
             }
@@ -146,7 +146,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 
             //pin len max
             if (strlen(arg3buff) != 4){
-                printf("pin not long enough\n");
+                //printf("pin wrong length\n");
                 printf("Usage: create-user <user-name> <pin> <balance>\n");
                 return;
             }else{
@@ -155,14 +155,14 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 
             //valid pin
             if(!valid_pin(arg3)){
-                printf("not valid pin\n");
+                //printf("not valid pin\n");
                 printf("Usage: create-user <user-name> <pin> <balance>\n");
                 return;
             }
 
             //balance max
             if (strlen(arg4buff) > MAX_ARG4_LEN){
-                printf("balance too large");
+                //printf("balance too large");
                 printf("Usage: create-user <user-name> <pin> <balance>\n");
                 return;
             }else{
@@ -171,7 +171,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 
             //valid balance
             if (!valid_balance(arg4)){
-                printf("balance not valid\n");
+                //printf("balance not valid\n");
                 printf("Usage: create-user <user-name> <pin> <balance>\n");
                 return;
             } 
@@ -219,10 +219,10 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
                 encrypt(card,key,encrypted);
 
                 fwrite(encrypted,1,sizeof(encrypted),card_file);
-                printf("Inserting \"%s\" => \"%s\"\n", user_name, key);
+                //printf("Inserting \"%s\" => \"%s\"\n", user_name, key);
                 
                 hash_table_add(users, user_name, key);
-                printf("Inserting \"%s\" => \"%u\"\n",user_name, bal);
+                //printf("Inserting \"%s\" => \"%u\"\n",user_name, bal);
                 hash_table_add(balance, user_name, bal);
 
                 printf("Created user %s\n", user_name);
@@ -280,19 +280,19 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
             return;
         }
 
-        printf("PASSED ALL THE CHECKS\n");
+        //printf("PASSED ALL THE CHECKS\n");
         
         char *p;
         long amt = strtol(arg3buff, &p, 10);
         unsigned int curr_bal = hash_table_find(balance, arg2);
    
-        printf("about to add %lu to %s's current balance of %u\n", amt, arg2, curr_bal);
+        //printf("about to add %lu to %s's current balance of %u\n", amt, arg2, curr_bal);
         if(amt >= UINT_MAX || curr_bal + amt < 0){
             printf("Too rich for this program\n");
             return;
         }
         
-        printf("copying buff into arg3\n");
+        //printf("copying buff into arg3\n");
         strncpy(arg3, arg3buff, strlen(arg3buff));
 
         //valid balance if able to deposit
@@ -302,15 +302,15 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         }
 
         //CHANGE THE AMOUNT IN BANK
-        printf("curr balance: %u\n", curr_bal);
-        printf("amount: %lu\n", amt);
-        printf("lets add: %u\n", amt+curr_bal);
+        //printf("curr balance: %u\n", curr_bal);
+        //printf("amount: %lu\n", amt);
+        //printf("lets add: %u\n", amt+curr_bal);
 
-        printf("before deposit %s's balance is %u\n", arg2, curr_bal);
-        printf("arg2: %s\n", arg2);
+        //printf("before deposit %s's balance is %u\n", arg2, curr_bal);
+        //printf("arg2: %s\n", arg2);
         hash_table_del(balance, arg2);
         hash_table_add(balance, arg2, amt + curr_bal);
-        printf("%s's balance is now %u\n", arg2, hash_table_find(balance, arg2));
+        //printf("%s's balance is now %u\n", arg2, hash_table_find(balance, arg2));
         printf("$%s added to %s's account\n", arg3, arg2);
         return;
     }else if (strcmp(arg1, "balance") == 0){
@@ -337,13 +337,13 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         }
 
         if (!user_exists(arg2, users)){
-            printf("No such user");
+            printf("No such user\n");
             return;
         }    
 
         //RETRIEVE BALANCE
 
-        printf("retrieving balance\n");
+        //printf("retrieving balance\n");
         printf("$%d\n", hash_table_find(balance, arg2));
         return;
     }else{
@@ -476,7 +476,7 @@ int valid_user(char *user_name){
 
 int user_exists(char *user_name,HashTable *users){
     if(hash_table_find(users, user_name)==NULL){
-        printf("user does not exist already\n");
+        //printf("user does not exist already\n");
         return 0;
     }
     return 1;
