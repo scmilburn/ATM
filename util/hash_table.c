@@ -111,7 +111,7 @@ void hash_table_del(HashTable *ht, const char *key)
     ht->size -= list_size(ht->bins[idx]);
     list_del(ht->bins[idx], key);
     ht->size += list_size(ht->bins[idx]);
-    free(key);
+    //free(key); everything blows up here
 }
 
 uint32_t hash_table_size(const HashTable *ht)

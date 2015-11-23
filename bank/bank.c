@@ -45,10 +45,6 @@ Bank* bank_create()
 
     //user profile
 
-    bank->users = list_create();
-    bank->usr_bal = hash_table_create(100);    
-    bank->usr_pin = hash_table_create(100);
-
     return bank;
 }
 
@@ -56,9 +52,6 @@ void bank_free(Bank *bank)
 {
     if(bank != NULL)
     {
-        list_free(bank->users);
-        hash_table_free(bank->usr_bal);
-        hash_table_free(bank->usr_pin);
         close(bank->sockfd);
         free(bank);
     }
@@ -226,7 +219,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
                 encrypt(card,key,encrypted);
 
                 fwrite(encrypted,1,sizeof(encrypted),card_file);
-                printf("Inserting \"%s\" => \"%s\"\n", arg2, key);
+                printf("Inserting \"%s\" => \"%s\"\n", user_name, key);
                 
                 hash_table_add(users, user_name, key);
                 printf("Inserting \"%s\" => \"%u\"\n",user_name, bal);
@@ -309,10 +302,15 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         }
 
         //CHANGE THE AMOUNT IN BANK
+        printf("curr balance: %u\n", curr_bal);
+        printf("amount: %lu\n", amt);
+        printf("lets add: %u\n", amt+curr_bal);
 
         printf("before deposit %s's balance is %u\n", arg2, curr_bal);
+        printf("arg2: %s\n", arg2);
+        hash_table_del(balance, arg2);
         hash_table_add(balance, arg2, amt + curr_bal);
-        printf("%s's balance is now %u\n", arg2, (unsigned int) hash_table_find(balance, arg2));
+        printf("%s's balance is now %u\n", arg2, hash_table_find(balance, arg2));
         printf("$%s added to %s's account\n", arg3, arg2);
         return;
     }else if (strcmp(arg1, "balance") == 0){
@@ -346,9 +344,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         //RETRIEVE BALANCE
 
         printf("retrieving balance\n");
-
-        //get-balance(arg2);
-        //printf("$%d\n", balance);
+        printf("$%d\n", hash_table_find(balance, arg2));
         return;
     }else{
         printf("Invalid command\n");

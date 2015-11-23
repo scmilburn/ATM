@@ -88,7 +88,7 @@ int main(int argc, char**argv)
       	    printf("%s", prompt);
             fflush(stdout);
 	}
-	printf("bob's balance is now %u\n",(unsigned int)hash_table_find(balance,"bob"));
+    	//printf("bob's balance is now %u\n",(unsigned int)hash_table_find(balance,"bob"));
    }
    hash_table_free(balance);
    hash_table_free(users); //never executes
