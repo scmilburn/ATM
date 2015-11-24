@@ -1,7 +1,6 @@
 /* 
  * The main program for the Bank.
  *
- * You are free to change this as necessary.
  */
 
 #include <string.h>
@@ -33,9 +32,15 @@ int main(int argc, char**argv)
     }
     fread(key,sizeof(key),32,file);
     //printf("bank file contents: %s\n",key);
+    //List *users;
+    //HashTable *usr_bal;
+    //HashTable *usr_key;
     HashTable *users = hash_table_create(100);
-    HashTable *balance = hash_table_create(100);   
+    HashTable *balance = hash_table_create(100);     
     Bank *bank = bank_create();
+    bank->users = list_create();
+    bank->usr_key = hash_table_create(100);
+    bank->usr_bal = hash_table_create(100);
     printf("%s", prompt);
     fflush(stdout);
 
@@ -85,7 +90,7 @@ int main(int argc, char**argv)
             printf("%s", prompt);
             fflush(stdout);
         }
-        //printf("bob's balance is now %u\n",(unsigned int)hash_table_find(balance,"bob"));
+        //printf("bob's balance is now %u\n",hash_table_find(balance,"bob"));
     }
     hash_table_free(balance);
     hash_table_free(users); //never executes

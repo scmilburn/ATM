@@ -83,7 +83,7 @@ void list_del(List *list, const char *key)
                 prev->next = curr->next;
 
             list->size--;
-
+	    //printf("IN LIST freeing %s\n",key);
             free(curr);
             return;
         }
