@@ -53,10 +53,12 @@ void list_add(List *list, char *key, void *val)
     elem->val = val;
     elem->next = NULL;
 
-    if(list->tail == NULL)
+    if(list->tail == NULL) ////////////////////////
         list->head = list->tail = elem;
     else
         list->tail->next = elem;
+list->tail = elem;
+
 
     list->size++;
 }

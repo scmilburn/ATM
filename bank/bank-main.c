@@ -64,9 +64,10 @@ int main(int argc, char**argv)
         }else if(FD_ISSET(bank->sockfd, &fds)){
             memset(recvline,'\0',1000);
             memset(decrypted,'\0',1000);
+	    int flag = 0;
 
             n = bank_recv(bank, recvline, 1000);
-
+	    //if it can't decrypt properly then it should send a null packet back to the atm
             EVP_CIPHER_CTX ctx;
             int decrypt_len;
             unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -75,12 +76,25 @@ int main(int argc, char**argv)
             int len1;
             if(!EVP_DecryptUpdate(&ctx,decrypted,&len1,recvline,strlen(recvline))){
                 printf("Decrypt Update Error\n");
+		flag = 1;
             }
             decrypt_len=len1;
             if(!EVP_DecryptFinal(&ctx,decrypted+len1,&len1)){
                 printf("Decrypt Final Error\n");
+		flag = 1;
 
             }
+
+	    if(flag){ //this means that it has not been decrypted correctly so it will return a null packet
+		unsigned char encrypted[10000];
+		char packet[10000];
+		sprintf(packet,"<%s>",NULL);
+		encrypt(packet,key,encrypted);
+		bank_send(bank, encrypted, strlen(encrypted));
+		printf("%s", prompt);
+            	fflush(stdout);
+		continue;
+	    }
 
             printf("%s\n",decrypted);
             char * message=strtok(decrypted,"\n");
