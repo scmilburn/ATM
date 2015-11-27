@@ -14,7 +14,7 @@ static const char prompt[] = "ATM: ";
 int main(int argc,char*argv[])
 {
     FILE *file;
-    char user_input[1000];
+    char user_input[10000];
     //memset(user_input,'\0',1000);
     char buffer[32];
     file=fopen(argv[1],"r");
@@ -31,12 +31,21 @@ int main(int argc,char*argv[])
     fflush(stdout);
 	
     char *ans;
-    //fgets(user_input, 1000,stdin);
-    while (fgets(user_input, 1000,stdin) != NULL)
+
+    while (fgets(user_input, 10000,stdin) != NULL)
     {
-	if(!strcmp(user_input,"\n")){ //no input so keep looping 		
-		continue;
+	if(!strcmp(user_input,"\n") || !strcmp(user_input," ")){ //no input so keep looping 			
+	    /*num++;
+	    puts(num);
+	    if(num >= max_time){
+                ans= atm_process_command(atm, "end-session",buffer);
+		printf("%s", prompt);
+		fflush(stdout);
+	    }*/
+	    
+	    continue;
 	}
+	//num = 0;
 	//printf("HERE\n");
 	printf("IN ATM-MAIN COMMAND IS:: %s\n",user_input);
         ans= atm_process_command(atm, user_input,buffer);

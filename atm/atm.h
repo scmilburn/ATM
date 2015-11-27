@@ -33,9 +33,10 @@ ssize_t atm_send(ATM *atm, char *data, size_t data_len);
 ssize_t atm_recv(ATM *atm, char *data, size_t max_data_len);
 char * atm_process_command(ATM *atm, char *command,char *key);
 int authenticate(char *user_name, char *packet, ATM *atm,char *key, char  *user_pin);
-void encrypt(char *message,char*key,unsigned char*encrypted);
-void decrypt(unsigned char *message,char*key, unsigned char*decrypted);
+int encrypt(char *message,char*key,unsigned char*encrypted);
+int decrypt(unsigned char *message,char*key, unsigned char*decrypted);
 void parse_packet(char *packet, char *temp);
 void send_and_recv(ATM *atm, char *packet,char *key, char *result);
+int all_digits(char *number);
 
 #endif

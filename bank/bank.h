@@ -33,7 +33,7 @@ typedef struct _Bank
     // TODO add more, as needed
     List *users;
     HashTable *usr_bal;
-    HashTable *usr_pin;
+    HashTable *usr_key;
 } Bank;
 
 Bank* bank_create();
