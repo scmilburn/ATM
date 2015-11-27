@@ -11,8 +11,8 @@
 
 #define MAX_ARG1_LEN 11 //cmd
 #define MAX_ARG2_LEN 250 //usrname
-#define MAX_ARG3_LEN 5 //pin or amt
-#define MAX_ARG4_LEN 5 //unsigned int max 65535
+#define MAX_ARG3_LEN 10 //pin or amt
+#define MAX_ARG4_LEN 10 //unsigned int max 4294967295
 #define MAX_LINE_LEN 1000
 #define TRUE 1;
 #define FALSE 0;
@@ -160,7 +160,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
                 return;
             }
 
-            //balance max
+            //balance str max
             if (strlen(arg4buff) > MAX_ARG4_LEN){
                 //printf("balance too large");
                 printf("Usage: create-user <user-name> <pin> <balance>\n");
@@ -177,7 +177,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
             } 
             
             char *ptr;
-            unsigned int bal = strtol(arg4, &ptr, 10);
+            unsigned long bal = strtol(arg4, &ptr, 10);
             
 
             /////////////
@@ -222,7 +222,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
                 //printf("Inserting \"%s\" => \"%s\"\n", user_name, key);
                 
                 hash_table_add(users, user_name, key);
-                //printf("Inserting \"%s\" => \"%u\"\n",user_name, bal);
+                printf("Inserting \"%s\" => \"%u\"\n",user_name, bal);
                 hash_table_add(balance, user_name, bal);
 
                 printf("Created user %s\n", user_name);
@@ -283,11 +283,11 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         //printf("PASSED ALL THE CHECKS\n");
         
         char *p;
-        long amt = strtol(arg3buff, &p, 10);
-        unsigned int curr_bal = hash_table_find(balance, arg2);
+        unsigned long amt = strtoul(arg3buff, &p, 10);
+        unsigned long curr_bal = hash_table_find(balance, arg2);
    
         //printf("about to add %lu to %s's current balance of %u\n", amt, arg2, curr_bal);
-        if(amt >= UINT_MAX || curr_bal + amt < 0){
+        if(amt >= UINT_MAX || curr_bal + amt < 0 || curr_bal + amt > UINT_MAX){
             printf("Too rich for this program\n");
             return;
         }
@@ -344,7 +344,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         //RETRIEVE BALANCE
 
         //printf("retrieving balance\n");
-        printf("$%d\n", hash_table_find(balance, arg2));
+        printf("$%u\n", hash_table_find(balance, arg2));
         return;
     }else{
         printf("Invalid command\n");
@@ -487,8 +487,9 @@ int valid_pin(char *pin){
         printf("not all digits\n");
         return FALSE;
     }
+    char *ptr;
 
-    long num = strtol(pin, NULL, 10);
+    unsigned long num = strtoul(pin, &ptr, 10);
     if (num < 0 || num > 9999){
         return FALSE;
     }
@@ -500,7 +501,7 @@ int valid_balance(char *bal){
         return FALSE;
     }
     char *ptr;
-    long num = strtol(bal, &ptr, 10);
+    unsigned long num = strtoul(bal, &ptr, 10);
 
     if (num < 0 || num >= UINT_MAX){
         return FALSE;
