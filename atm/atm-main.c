@@ -47,7 +47,7 @@ int main(int argc,char*argv[])
         if(!strcmp(ans,"")){
             printf("%s", prompt);
         }else{
-            printf("%s(%s)", prompt,ans);
+            printf("ATM (%s): ",ans);
         }
 
         fflush(stdout);
