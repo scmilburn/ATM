@@ -148,7 +148,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 		    char *user=malloc(250); //SIZE OF USERNAME
 		    memset(user,'\0',250);
 		    strncpy(user,str1,strlen(str1));
-		    printf("authetication for %s\n",user);
+		    //printf("authetication for %s\n",user);
 		    str1 = strtok(NULL," ");
 		    if(str1 !=NULL){
 			printf("Invalid command\n");

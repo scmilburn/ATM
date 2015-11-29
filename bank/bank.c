@@ -401,20 +401,19 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
 //withdraw <withdraw|"name"|"amount">
     else if (!strcmp(comm,"withdraw")){
         comm = strtok(NULL,"|");
-        char *user = malloc(sizeof(comm));
-	//memcpy(user,'\0',sizeof(comm)-1);
-        //puts("HERE");
-	strncpy(user,comm,sizeof(comm));
-	//char *user=comm;
         if(comm ==NULL){
             printf("ERROR packet not in correct format\n");
+	    //generate response
         }
+	char *user=malloc(250); //SIZE OF USERNAME
+	memset(user,'\0',250);
+	strncpy(user,comm,strlen(comm));
         comm = strtok(NULL,"|");
         if(comm ==NULL){
             printf("ERROR packet not in correct format\n");
+	    //generate response
         }
         //printf("Withdrawing %s from %s\n",comm,user);
-	//unsigned int val = 
 	printf("balance for %s is %u\n",user, hash_table_find(balance,user));
         unsigned int val = malloc(sizeof(unsigned int));
 	unsigned int tmp = (unsigned int)hash_table_find(balance,user);
@@ -441,6 +440,8 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         }
         encrypt(packet,key,encrypted);
         bank_send(bank, encrypted, strlen(encrypted));
+	free(user);
+	user=NULL;
     }
 
     //balance <balance|"name"|amt>

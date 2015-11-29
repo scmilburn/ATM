@@ -23,7 +23,7 @@ int main(int argc,char*argv[])
 	return 64;
     }
     fread(buffer,sizeof(buffer),32,file);
-    printf("atm file contents: %s\n",buffer);
+    //printf("atm file contents: %s\n",buffer);
  
     ATM *atm = atm_create();
 
@@ -39,10 +39,10 @@ int main(int argc,char*argv[])
 	}
 	//num = 0;
 	//printf("HERE\n");
-	printf("IN ATM-MAIN COMMAND IS:: %s\n",user_input);
+	//printf("IN ATM-MAIN COMMAND IS:: %s\n",user_input);
         ans= atm_process_command(atm, user_input,buffer);
 	
-	printf("answer is %s\n",ans);
+	//printf("answer is %s\n",ans);
 	if(!strcmp(ans,"")){
         	printf("%s", prompt);
 	}else{
