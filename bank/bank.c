@@ -362,7 +362,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTable *users, char *key, HashTable *balance)
 {
-    char sendline[1000];
+    //char sendline[1000];
     unsigned char encrypted[1000];
     command[len] = 0;
     char * packet = malloc(1000);
@@ -407,15 +407,15 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         comm = strtok(NULL,"|");
         if(comm ==NULL){
             printf("ERROR packet not in correct format\n");
-	    //generate response
+            //generate response
         }
-	char *user=malloc(250); //SIZE OF USERNAME
-	memset(user,'\0',250);
-	strncpy(user,comm,strlen(comm));
+        char *user=malloc(250); //SIZE OF USERNAME
+        memset(user,'\0',250);
+        strncpy(user,comm,strlen(comm));
         comm = strtok(NULL,"|");
         if(comm ==NULL){
             printf("ERROR packet not in correct format\n");
-	    //generate response
+            //generate response
         }
         //printf("Withdrawing %s from %s\n",comm,user);
 
@@ -446,19 +446,17 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         }
         encrypt(packet,key,encrypted);
         bank_send(bank, encrypted, strlen(encrypted));
-	free(user);
-	user=NULL;
+        free(user);
+        user=NULL;
     }
 
     //balance <balance|"name"|amt>
-    else if (!strcmp(comm,"balance")){
+    else if (strcmp(comm,"balance") == 0){
         comm = strtok(NULL,"|");
-        if(comm ==NULL){
+        if(comm == NULL){
             printf("ERROR packet not in correct format\n");
         }
         unsigned int *bal = hash_table_find(balance,comm);
-        //unsigned int *bal = hash_table_find(balance,comm);
-        //printf("Looking for balance for \"bob\" It is %u\n",comm,hash_table_find(balance,"bob"));
         printf("Looking for balance for %s  It is %u\n",comm,bal);
         sprintf(packet,"<balance|%s|%u>",comm,hash_table_find(balance,comm));
         printf("sending packet: %s\n",packet);

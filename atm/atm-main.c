@@ -38,13 +38,13 @@ int main(int argc,char*argv[])
         if(!strcmp(user_input,"\n") || !strcmp(user_input," ")){ //no input so keep looping 		
             continue;
         }
-        //num = 0;
-        //printf("HERE\n");
-        printf("IN ATM-MAIN COMMAND IS:: %s\n",user_input);
+        
+        //printf("IN ATM-MAIN COMMAND IS:: %s\n",user_input);
         ans= atm_process_command(atm, user_input,buffer);
         
         //ans is the user starting a session
-        printf("answer is %s\n",ans);
+        
+        //printf("answer is %s\n",ans);
         if(!strcmp(ans,"")){
             printf("%s", prompt);
         }else{
