@@ -360,7 +360,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
 {
     char sendline[1000];
     unsigned char encrypted[1000];
-    command[len]=0;
+    command[len] = 0;
     char * packet = malloc(1000);
     memset(packet,'\0',strlen(packet));
 
