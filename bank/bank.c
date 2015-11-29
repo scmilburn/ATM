@@ -291,27 +291,14 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         unsigned int curr_bal = hash_table_find(balance, arg2);
         unsigned int new_bal = curr_bal + amt;
 
-        if (amt > UINT_MAX){
-            printf("amt greater than limit\n");
-        }else if (amt == UINT_MAX){
-            printf("equal 2 limit\n");
-        }else{
-            printf("less than limit\n");
-        }
-
-        printf("amt: %u\n", amt);
-        printf("curr_bal: %u\n", curr_bal);
         //printf("about to add %lu to %s's current balance of %u\n", amt, arg2, curr_bal);
         if(amt > UINT_MAX || new_bal < 0 || new_bal < curr_bal || curr_bal + amt > UINT_MAX){
             printf("Too rich for this program\n");
             return;
         }
-        
-        //printf("copying buff into arg3\n");
-        strncpy(arg3, arg3buff, strlen(arg3buff));
 
         //valid balance if able to deposit
-        if (!valid_balance(arg3)){
+        if (!valid_balance(arg3buff)){
             printf("Usage: deposit <user-name> <amt>\n");
             return;      
         }
@@ -329,7 +316,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         hash_table_add(balance, arg2, new_bal);
 
         //printf("%s's balance is now %u\n", arg2, hash_table_find(balance, arg2));
-        printf("$%s added to %s's account\n", arg3, arg2);
+        printf("$%u added to %s's account\n", amt, arg2);
         return;
     }else if (strcmp(arg1, "balance") == 0){
 
