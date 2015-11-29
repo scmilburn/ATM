@@ -66,6 +66,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
     char *str,*str1;
     str=strtok(command,"\n");
     char *packet = malloc(10000);
+    memset(packet,'\0',10000);
 
     //balance	
     if(strcmp(str,"balance")==0){
@@ -144,9 +145,10 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 		    return session_token;
 		}else{
 		    //check to see if too many arguments
-		    char *user[sizeof(str1)];
-		    memset(user,'\0',sizeof(str1));
+		    char *user=malloc(250); //SIZE OF USERNAME
+		    memset(user,'\0',250);
 		    strncpy(user,str1,strlen(str1));
+		    printf("authetication for %s\n",user);
 		    str1 = strtok(NULL," ");
 		    if(str1 !=NULL){
 			printf("Invalid command\n");
@@ -175,6 +177,8 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 		    }else{
 		        printf("Not Authorized\n");
 		    }
+		free(user);
+		user=NULL;
 		}
 				
 	    }
