@@ -147,8 +147,8 @@ char * atm_process_command(ATM *atm, char *command,char *key)
                     return session_token;
                 }else{
                     //check to see if too many arguments
-                    char *user[sizeof(str1)];
-                    memset(user,'\0',sizeof(str1));
+                    char *user = malloc(251);
+                    memset(user,'\0',251);
                     strncpy(user,str1,strlen(str1));
                     str1 = strtok(NULL," ");
                     if(str1 !=NULL){
