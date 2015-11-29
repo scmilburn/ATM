@@ -19,21 +19,23 @@ int main(int argc,char*argv[])
     char buffer[32];
     file=fopen(argv[1],"r");
     if(file==0){
-    	printf("Error opening ATM initialization file\n");
-	return 64;
+        printf("Error opening ATM initialization file\n");
+        return 64;
     }
     fread(buffer,sizeof(buffer),32,file);
+
     //printf("atm file contents: %s\n",buffer);
  
     ATM *atm = atm_create();
 
     printf("%s", prompt);
     fflush(stdout);
-	
+
     char *ans;
 
     while (fgets(user_input, 10000,stdin) != NULL)
     {
+
 	if(!strcmp(user_input,"\n") || !strcmp(user_input," ")){ //no input so keep looping 			
 	    continue;
 	}
@@ -51,7 +53,7 @@ int main(int argc,char*argv[])
 	}
         fflush(stdout);
     }
-	//puts(fgets(user_input, 1000,stdin));
-	atm_free(atm);
-	return 0;
+    //puts(fgets(user_input, 1000,stdin));
+    atm_free(atm);
+    return 0;
 }

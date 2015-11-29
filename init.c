@@ -26,8 +26,8 @@ int main(int argc, char* argv[]){
     strcat(atm_path, argv[1]);
     strcat(atm_path, ".atm");
    
-    bank_file=fopen(bank,"r");
-    atm_file=fopen(atm,"r");
+    bank_file=fopen(bank_path,"r");
+    atm_file=fopen(atm_path,"r");
     if(bank_file == 0 && atm_file == 0){ //file does not exist
         if ((bank_file=fopen(bank_path,"w")) == NULL || (atm_file=fopen(atm_path,"w")) == NULL){
             printf("Error creating initialization files\n");
