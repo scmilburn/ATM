@@ -63,36 +63,20 @@ ssize_t atm_recv(ATM *atm, char *data, size_t max_data_len)
 
 char * atm_process_command(ATM *atm, char *command,char *key)
 {
-    char arg1[14], arg2[251];
-    memset(arg1, '\0', 14);
-    memset(arg2, '\0', 251);
-    
-    sscanf(command, "%s %s", arg1, arg2);
-    if (strlen(arg1) > 13 || strlen(arg1) < 1){
-        printf("Invalid command\n");
-        return;
-    }
-    
-    if (strcmp(arg1, "begin-session") == 0){
-        if(session in progress){
-
-        }
-    }
-
-
-
     char *str,*str1;
     str=strtok(command,"\n");
     char *packet = malloc(10000);
 
     //balance	
     if(strcmp(str,"balance")==0){
+        
+        //what does this do?
         str = strtok(NULL," ");
         if(str !=NULL){
             printf("Invalid command\n");
         }
         if(!strcmp(session_token,"")){
-            printf("there is not currently a session\n");
+            printf("No user logged in\n");
         }else{
             sprintf(packet,"<balance|%s>",session_token);
             char recvline[10000];
