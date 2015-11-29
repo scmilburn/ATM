@@ -133,7 +133,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
             memset(session_token,'\0',250);
         }
     }else{
-        str1=strtok(str," ");
+	str1=strtok(str," ");
         //begin-session <username>
         if(strcmp(str1,"begin-session")==0){
             if(strcmp(session_token,"")){
