@@ -66,6 +66,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
     char *str,*str1;
     str=strtok(command,"\n");
     char *packet = malloc(10000);
+    memset(packet,'\0',10000);
 
     //balance	
     if(strcmp(str,"balance")==0){
@@ -177,6 +178,8 @@ char * atm_process_command(ATM *atm, char *command,char *key)
                     }else{
                         printf("Not Authorized\n");
                     }
+                    free(user);
+                    user = NULL;
                 }
 
             }

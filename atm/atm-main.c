@@ -34,15 +34,7 @@ int main(int argc,char*argv[])
 
     while (fgets(user_input, 10000,stdin) != NULL)
     {
-        if(!strcmp(user_input,"\n") || !strcmp(user_input," ")){ //no input so keep looping 			
-            /*num++;
-              puts(num);
-              if(num >= max_time){
-              ans= atm_process_command(atm, "end-session",buffer);
-              printf("%s", prompt);
-              fflush(stdout);
-              }*/
-
+        if(!strcmp(user_input,"\n") || !strcmp(user_input," ")){ //no input so keep looping 		
             continue;
         }
         //num = 0;
