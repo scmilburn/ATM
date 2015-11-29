@@ -177,18 +177,11 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
             } 
             
             char *ptr;
+            unsigned int bal = strtoul(arg4, &ptr, 10);
 
-            unsigned long bal = strtol(arg4, &ptr, 10);
-	    unsigned int bal = malloc(sizeof(unsigned int));
-            //unsigned int bal = strtol(arg4, &ptr, 10);
-	    
-        bal = strtol(arg4, &ptr, 10);
-
-            
-
-            /////////////
-            //MAKING CARD
-            /////////////
+            ///////////////
+            //MAKING CARD//
+            ///////////////
 
             //CARD FILENAME
             int fn_len = strlen(arg2) + strlen(".card") + 1;
@@ -197,7 +190,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
             strncpy(file, arg2, strlen(arg2));
             strncat(file, ".card", strlen(".card"));
             
-	    //char *user_name[strlen(arg2)];
+	        //char *user_name[strlen(arg2)];
             char *user_name = malloc(strlen(arg2));
             char *user_name_card = malloc(strlen(arg2));
             memset(user_name, '\0', strlen(arg2));
@@ -227,7 +220,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 
                 fwrite(encrypted,1,sizeof(encrypted),card_file);
 
-		//INSERTING INTO BANK
+		        //INSERTING INTO BANK
                 printf("Inserting \"%s\" => \"%s\"\n", user_name, key);
                 //list_add(bank->users,user_name,key);
                 hash_table_add(users, user_name, key);
@@ -292,12 +285,24 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         //printf("PASSED ALL THE CHECKS\n");
         
         char *p;
-	    unsigned int new_bal = malloc(sizeof(unsigned int));
-        long amt = strtol(arg3buff, &p, 10);
+	    //unsigned int new_bal = malloc(sizeof(unsigned int));
+        
+        unsigned int amt = strtoul(arg3buff, &p, 10);
         unsigned int curr_bal = hash_table_find(balance, arg2);
-   
+        unsigned int new_bal = curr_bal + amt;
+
+        if (amt > UINT_MAX){
+            printf("amt greater than limit\n");
+        }else if (amt == UINT_MAX){
+            printf("equal 2 limit\n");
+        }else{
+            printf("less than limit\n");
+        }
+
+        printf("amt: %u\n", amt);
+        printf("curr_bal: %u\n", curr_bal);
         //printf("about to add %lu to %s's current balance of %u\n", amt, arg2, curr_bal);
-        if(amt >= UINT_MAX || curr_bal + amt < 0 || curr_bal + amt > UINT_MAX){
+        if(amt > UINT_MAX || new_bal < 0 || new_bal < curr_bal || curr_bal + amt > UINT_MAX){
             printf("Too rich for this program\n");
             return;
         }
@@ -319,8 +324,8 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         //printf("before deposit %s's balance is %u\n", arg2, curr_bal);
         //printf("arg2: %s\n", arg2);
 
-	new_bal= amt+curr_bal;
-	hash_table_del(balance, arg2);
+	    new_bal= amt+curr_bal;
+	    hash_table_del(balance, arg2);
         hash_table_add(balance, arg2, new_bal);
 
         //printf("%s's balance is now %u\n", arg2, hash_table_find(balance, arg2));
@@ -518,7 +523,7 @@ int valid_balance(char *bal){
     char *ptr;
     unsigned long num = strtoul(bal, &ptr, 10);
 
-    if (num < 0 || num >= UINT_MAX){
+    if (num < 0 || num > UINT_MAX){
         return FALSE;
     }
     return TRUE;
