@@ -289,11 +289,14 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         //printf("PASSED ALL THE CHECKS\n");
 
         char *p;
-        //unsigned int new_bal = malloc(sizeof(unsigned int));
+        unsigned int new_bal = malloc(sizeof(unsigned int));
 
         unsigned int amt = strtoul(arg3buff, &p, 10);
         unsigned int curr_bal = hash_table_find(balance, arg2);
-        unsigned int new_bal = curr_bal + amt;
+	char *user = malloc(251);
+	memset(user,'\0',251);
+	strncpy(user,arg2,strlen(arg2));
+         
 
         //printf("about to add %lu to %s's current balance of %u\n", amt, arg2, curr_bal);
         if(amt > UINT_MAX || new_bal < 0 || new_bal < curr_bal || curr_bal + amt > UINT_MAX){
@@ -308,19 +311,19 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
         }
 
         //CHANGE THE AMOUNT IN BANK
-        //printf("curr balance: %u\n", curr_bal);
-        //printf("amount: %lu\n", amt);
-        //printf("lets add: %u\n", amt+curr_bal);
+        printf("curr balance: %u\n", curr_bal);
+        printf("amount: %lu\n", amt);
+        printf("lets add: %u\n", amt+curr_bal);
 
         //printf("before deposit %s's balance is %u\n", arg2, curr_bal);
         //printf("arg2: %s\n", arg2);
 
         new_bal= amt+curr_bal;
-        hash_table_del(balance, arg2);
-        hash_table_add(balance, arg2, new_bal);
+        hash_table_del(balance, user);
+        hash_table_add(balance, user, new_bal);
 
         //printf("%s's balance is now %u\n", arg2, hash_table_find(balance, arg2));
-        printf("$%u added to %s's account\n", amt, arg2);
+        printf("$%u added to %s's account\n", amt, user);
         return;
     }else if (strcmp(arg1, "balance") == 0){
 
