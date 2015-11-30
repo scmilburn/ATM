@@ -103,14 +103,17 @@ char * atm_process_command(ATM *atm, char *command,char *key)
                 return session_token;
             }
             if(strcmp(comm,"balance")){
+		//printf("HERE1\n");
                 printf("Usage: balance\n");
             }else{
                 comm=strtok(NULL,"|");
                 if(strcmp(comm,session_token)){
+		    //printf("HERE2\n");
                     printf("Usage: balance\n");
                 }else{
                     comm=strtok(NULL,"|");
                     if(comm==NULL){
+			//printf("HERE3\n");
                         printf("Usage: balance\n");
                     }else{
                         printf("$%s\n",comm);
@@ -151,6 +154,20 @@ char * atm_process_command(ATM *atm, char *command,char *key)
                     memset(user,'\0',251);
                     strncpy(user,str1,strlen(str1));
                     str1 = strtok(NULL," ");
+                    
+                    //checking user exists before asking for pin
+                    int card_name_len = strlen(user) + strlen(".card") + 1;
+                    char card_name[card_name_len];
+                    memset(card_name, '\0', card_name_len);
+                    strncpy(card_name, user, strlen(user));
+                    strncat(card_name, ".card", strlen(".card"));
+
+                    FILE *card_file = fopen(card_name, "r");
+                    if (!card_file){
+                        printf("No such user\n");
+                        return session_token;
+                    }
+                    
                     if(str1 !=NULL){
                         printf("Invalid command\n");
                         free(packet);
