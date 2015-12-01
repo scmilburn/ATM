@@ -90,7 +90,9 @@ char * atm_process_command(ATM *atm, char *command,char *key)
             printf("sending packet:%s\n",packet);
 
             char packet_contents[10000];
+	    memset(packet_contents,'\0',10000);
             send_and_recv(atm,packet,key,packet_contents);
+	    printf("packet_contents: \"%s\"\n",packet_contents);
             if(packet_contents==NULL){
                 free(packet);
                 packet=NULL;
@@ -152,7 +154,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
                     //check to see if too many arguments
                     char *user = malloc(251);
                     memset(user,'\0',251);
-                    strncpy(user,str1,strlen(str1));
+                    strncpy(user,str1,strlen(str1));////
                     str1 = strtok(NULL," ");
                     
                     //checking user exists before asking for pin
@@ -164,7 +166,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 
                     FILE *card_file = fopen(card_name, "r");
                     if (!card_file){
-                        printf("No such user\n");
+                        printf("No card inserted\n");
                         return session_token;
                     }
                     
@@ -190,7 +192,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
                     sprintf(packet,"<authentication|%s>",user);
                     printf("sending packet:%s\n",packet);
                     if(authenticate(user, packet,atm,key,pin)){
-                        strcpy(session_token,user);
+                        strncpy(session_token,user,strlen(user));/////
                         printf("Authenticated\n");
                     }else{
                         printf("Not Authorized\n");
@@ -223,6 +225,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
                         printf("Invalid command\n");
                     }else{
                         char parsed[10000];
+			memset(parsed,'\0',10000);
                         send_and_recv(atm,packet,key,parsed);
                         if(parsed == NULL){
                             printf("Invalid packet\n");
@@ -265,8 +268,10 @@ int all_digits(char *number){
 int authenticate(char *user_name, char *packet, ATM *atm,char *key,char *user_pin){
     int ret=0;	
     FILE *card_file;
-    char *argcpy=malloc(strlen(user_name));
-    strcpy(argcpy,user_name); //////FIX 
+    char *argcpy=malloc(250);
+    memset(argcpy,'\0',250);
+    strncpy(argcpy,user_name,strlen(user_name));
+    puts(argcpy);
     char *c = strcat(argcpy,".card");
     card_file=fopen(c,"r");
     if(!card_file){ //card file does not exist
@@ -274,9 +279,11 @@ int authenticate(char *user_name, char *packet, ATM *atm,char *key,char *user_pi
         ret=0;
     }else{
         char buf[10000];
+        memset(buf,'\0',10000);
         size_t bytes_read;
         bytes_read=fread(buf,sizeof(buf),1,card_file);
         char packet_contents[10000];
+	memset(packet_contents,'\0',10000);
         send_and_recv(atm,packet,key,packet_contents);
         if(packet_contents==NULL){
             free(argcpy);
@@ -305,6 +312,7 @@ int authenticate(char *user_name, char *packet, ATM *atm,char *key,char *user_pi
         //decrypt card file with key
         char decrypt_card[10000];
         if(!decrypt(buf,comm,decrypt_card)){
+	    printf("Decrypt Error in decrypting card file\n");
             free(argcpy);
             return 0;
         }
@@ -335,6 +343,7 @@ int authenticate(char *user_name, char *packet, ATM *atm,char *key,char *user_pi
 
 void send_and_recv(ATM *atm, char *packet,char *key, char *result){
     char recvline[10000];
+    memset(recvline,'\0',10000);
     encrypt(packet,key,encrypted);	
     atm_send(atm, encrypted, strlen(encrypted));
     memset(recvline,'\0',10000);
@@ -402,7 +411,7 @@ int decrypt(unsigned char *message,char*key, unsigned char*decrypted){
         ret = 0;
 
     }
-
+    printf("\"%s\"\n",decrypted);
     EVP_CIPHER_CTX_cleanup(&ctx);
     return ret;
 }

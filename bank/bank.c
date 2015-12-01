@@ -355,7 +355,8 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 
         //RETRIEVE BALANCE
 
-        //printf("retrieving balance\n");
+        printf("retrieving balance\n");
+	puts(arg2);
         printf("$%u\n", hash_table_find(balance, arg2));
         return;
     }else{
@@ -366,10 +367,11 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTable *users, char *key, HashTable *balance)
 {
     //char sendline[1000];
-    unsigned char encrypted[1000];
+    unsigned char encrypted[10000];
+    memset(encrypted,'\0',10000);
     command[len] = 0;
-    char * packet = malloc(1000);
-    memset(packet,'\0',strlen(packet));
+    char * packet = malloc(10000);
+    memset(packet,'\0',10000);
 
     printf("Received: %s\n",command);
     //sprintf(sendline, "Bank got: %s", command);
@@ -541,7 +543,7 @@ int all_digits(char *number){
 }
 void encrypt(char *message,char*key,unsigned char*encrypted){
     EVP_CIPHER_CTX ctx;
-    memset(encrypted,'\0',1000);
+    memset(encrypted,'\0',10000);
     unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     EVP_CIPHER_CTX_init(&ctx);
     EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);
@@ -558,7 +560,7 @@ void encrypt(char *message,char*key,unsigned char*encrypted){
 
 void decrypt(unsigned char *message,char*key, unsigned char*decrypted){
     EVP_CIPHER_CTX ctx;
-    //unsigned char encrypted[10000];
+    memset(decrypted,'\0',10000);
     unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     EVP_CIPHER_CTX_init(&ctx);
     EVP_DecryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);

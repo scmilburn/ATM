@@ -19,8 +19,9 @@ int main(int argc, char**argv)
     int n;
     char sendline[10000];
     char recvline[10000];
-    char key[32];
-    unsigned char decrypted[1000];
+    char key[33];
+    memset(key,'\0',33);
+    unsigned char decrypted[10000];
 
     FILE *file;
     //memset(recvline,'\0',10000);
@@ -31,7 +32,7 @@ int main(int argc, char**argv)
         return 64;
     }
     fread(key,sizeof(key),32,file);
-    //printf("bank file contents: %s\n",key);
+    printf("bank file contents: %s\n",key);
     //List *users;
     //HashTable *usr_bal;
     //HashTable *usr_key;
@@ -46,6 +47,9 @@ int main(int argc, char**argv)
 
     while(1)
     {
+	memset(decrypted,'\0',10000);
+	memset(recvline,'\0',10000);
+	memset(sendline,'\0',10000);
         fd_set fds;
         FD_ZERO(&fds);
         FD_SET(0, &fds);
@@ -62,8 +66,8 @@ int main(int argc, char**argv)
             printf("%s", prompt);
             fflush(stdout);
         }else if(FD_ISSET(bank->sockfd, &fds)){
-            memset(recvline,'\0',1000);
-            memset(decrypted,'\0',1000);
+            //memset(recvline,'\0',10000);
+            //memset(decrypted,'\0',10000);
 	    int flag = 0;
 
             n = bank_recv(bank, recvline, 1000);
@@ -81,6 +85,7 @@ int main(int argc, char**argv)
             decrypt_len=len1;
             if(!EVP_DecryptFinal(&ctx,decrypted+len1,&len1)){
                 printf("Decrypt Final Error\n");
+		printf("%s\n",decrypted);
 		flag = 1;
 
             }
@@ -104,6 +109,7 @@ int main(int argc, char**argv)
             printf("%s", prompt);
             fflush(stdout);
         }
+	
         //printf("bob's balance is now %u\n",hash_table_find(balance,"bob"));
     }
     hash_table_free(balance);
