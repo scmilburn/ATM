@@ -37,22 +37,20 @@ int main(int argc, char* argv[]){
         }
         
         //KEY GENERATION
-        char key[KEYLENGTH+1];
-	memset(key,'\0',KEYLENGTH+1);
+        char key[KEYLENGTH];
+	//memset(key,'\0',KEYLENGTH);
         const char charset[]="abcdefghijklmnopqrstuvwxyz"; 
         srand((unsigned)time(&t));
         for (n = 0; n < KEYLENGTH; n++){
             int k = rand() % 26;
             key[n]=charset[k];
         }
-        //key[KEYLENGTH]='\0';
+        key[KEYLENGTH]='\0';
 
         unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
         //printf("Private key generated is %s\n",key);        
         fwrite(key,1,strlen(key),bank_file);
         fwrite(key,1,strlen(key),atm_file);
-        //fwrite(iv,1,strlen(iv),bank_file);
-        //fwrite(iv,1,strlen(iv),atm_file);
         fclose(atm_file);
         fclose(bank_file);
         //printf("file does not exist: Good\n");

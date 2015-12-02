@@ -75,12 +75,12 @@ char * atm_process_command(ATM *atm, char *command,char *key)
         }else{
             sprintf(packet,"<balance|%s>",session_token);
             char recvline[10000];
-            if(!encrypt(packet,key,encrypted)){
+            /*if(!encrypt(packet,key,encrypted)){
                 printf("Usage: balance\n");
                 free(packet);
                 packet=NULL;
                 return session_token;
-            }
+            }*/
             printf("sending packet:%s\n",packet);
 
             char packet_contents[10000];
@@ -263,20 +263,26 @@ int all_digits(char *number){
 int authenticate(char *user_name, char *packet, ATM *atm,char *key,char *user_pin){
     int ret=0;	
     FILE *card_file;
+    size_t size_end;
     char *argcpy=malloc(250);
     memset(argcpy,'\0',250);
     strncpy(argcpy,user_name,strlen(user_name));
-    puts(argcpy);
+    //puts(argcpy);
     char *c = strcat(argcpy,".card");
     card_file=fopen(c,"r");
     if(!card_file){ //card file does not exist
         printf("No such user\n");
         ret=0;
     }else{
-        char buf[33];
-        memset(buf,'\0',33);
+        //check size of card file
+	fseek(card_file,0L,SEEK_END);
+   	size_end=ftell(card_file); //gets size of card file
+    	fclose(card_file);
+    	char buf[size_end];
+    	card_file=fopen(c,"r");
+        memset(buf,'\0',size_end);
         size_t bytes_read;
-        bytes_read=fread(buf,32,1,card_file);
+        bytes_read=fread(buf,size_end,1,card_file);	
         char packet_contents[10000];
 	memset(packet_contents,'\0',10000);
         send_and_recv(atm,packet,key,packet_contents);
@@ -304,10 +310,10 @@ int authenticate(char *user_name, char *packet, ATM *atm,char *key,char *user_pi
             free(argcpy);
             return 0;
         }
-
+	//char 
         //decrypt card file with key
         char decrypt_card[10000];
-        if(!decrypt(buf,comm,decrypt_card)){
+        if(!decrypt(buf,comm,decrypt_card,size_end)){
 	    printf("Decrypt Error in decrypting card file\n");
             free(argcpy);
             return 0;
@@ -340,11 +346,13 @@ int authenticate(char *user_name, char *packet, ATM *atm,char *key,char *user_pi
 void send_and_recv(ATM *atm, char *packet,char *key, char *result){
     char recvline[10000];
     memset(recvline,'\0',10000);
-    encrypt(packet,key,encrypted);	
-    atm_send(atm, encrypted, strlen(encrypted));
-    int n = atm_recv(atm,recvline,10000);
+    int out_size=0;
+    int n;	
+    encrypt(packet,key,encrypted,&out_size);	
+    atm_send(atm, encrypted, out_size);
+    n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
-    if(!decrypt(recvline,key,decrypted)){
+    if(!decrypt(recvline,key,decrypted,n)){
         result = NULL;
         return;
     }
@@ -369,44 +377,50 @@ void parse_packet(char *packet, char *temp){
 
 }
 
-int encrypt(char *message,char*key,unsigned char*encrypted){
+int encrypt(char *message,char*key,unsigned char*encrypted,int *out_size){
     EVP_CIPHER_CTX ctx;
     memset(encrypted,'\0',10000);
     int ret=1;
     unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     EVP_CIPHER_CTX_init(&ctx);
     EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);
-    int len1;
+    int len1,tmplen;
     if(!EVP_EncryptUpdate(&ctx,encrypted,&len1,message,strlen(message))){
         printf("Encrypt Update Error\n");
         ret= 0;
     }
-    if(!EVP_EncryptFinal(&ctx,encrypted+len1,&len1)){
+    if(!EVP_EncryptFinal(&ctx,encrypted+len1,&tmplen)){
         printf("Encrypt Final Error\n");
         ret= 0;
     }
+    len1+=tmplen;
+    *out_size=len1;
+    //printf("outsize in encrypt() is %d\n",out_size);
     EVP_CIPHER_CTX_cleanup(&ctx);
     return ret;
 }
 
-int decrypt(unsigned char *message,char*key, unsigned char*decrypted){
+int decrypt(unsigned char *message,char*key, unsigned char*decrypted, int cipher_size){
+    //printf("ciphertext size is %d\n",cipher_size);
     EVP_CIPHER_CTX ctx;
+    int ret =1;
     memset(decrypted,'\0',10000);
-    int ret = 1;
     unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     EVP_CIPHER_CTX_init(&ctx);
     EVP_DecryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);
     int len1;
-    if(!EVP_DecryptUpdate(&ctx,decrypted,&len1,message,strlen(message))){
+    if(!EVP_DecryptUpdate(&ctx,decrypted,&len1,message,cipher_size)){
         printf("Decrypt Update Error\n");
-        ret = 0;
+        ret=0;
     }
     if(!EVP_DecryptFinal(&ctx,decrypted+len1,&len1)){
         printf("Decrypt Final Error\n");
-        ret = 0;
+        printf("%s\n",decrypted);
+        ret=0;
 
     }
-    printf("\"%s\"\n",decrypted);
+    //char * mess=strtok(decrypted,"\n");
+    //decrypted=mess;
     EVP_CIPHER_CTX_cleanup(&ctx);
     return ret;
 }

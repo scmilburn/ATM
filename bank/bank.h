@@ -47,8 +47,8 @@ int user_exists(char *user_name, HashTable *users);
 int valid_pin(char *pin);
 int valid_balance(char *bal);
 int all_digits(char *number);
-void decrypt(unsigned char *message,char*key, unsigned char*decrypted);
-void encrypt(char *message,char*key,unsigned char*encrypted);
+int decrypt(unsigned char *message,char*key, unsigned char*decrypted, int cipher_size);
+void encrypt(char *message,char*key,unsigned char*encrypted,int *out_size);
 void generate_key(char *key);
 
 

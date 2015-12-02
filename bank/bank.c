@@ -226,9 +226,10 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
             char* card = strcat(semi, arg3);
 	    printf("writing %s to card\n",card);
             unsigned char encrypted[10000];
-            encrypt(card,key,encrypted);
+            int out_size =0;
+            encrypt(card,key,encrypted,&out_size);
 
-            fwrite(encrypted,1,sizeof(encrypted),card_file);
+            fwrite(encrypted,1,out_size,card_file);
 
             //INSERTING INTO BANK
             printf("Inserting \"%s\" => \"%s\"\n", user_name, key);
@@ -407,9 +408,9 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
             sprintf(packet,"<authentication|%s>",card_key);       
         }
         printf("sending packet: %s\n",packet);
-
-        encrypt(packet,key,encrypted);
-        bank_send(bank, encrypted, strlen(encrypted));
+        int out_size=0;
+        encrypt(packet,key,encrypted,&out_size);
+        bank_send(bank, encrypted, out_size);
     }
 
     //withdraw <withdraw|"name"|"amount">
@@ -442,20 +443,15 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
             val=tmp-withdraw_amt;
             //printf("The new val is %u\n",val);
             hash_table_del(balance,user);
-            printf("%s -> %s\n", user,(hash_table_find(balance, user) == NULL ? "Not Found" : "FAIL"));
-            //printf("%s -> %s\n", user,(hash_table_find(balance, "bob") == NULL ? "Not Found" : "FAIL"));
-            //printf("%s\n",hash_table_find(balance,user));
-            //printf("%s\n",hash_table_find(balance,"bob"));
             hash_table_add(balance,user,val);
-            //hash_table_del(balance,"bob");
-            //hash_table_add(balance,"bob",val);
             strcpy(packet,"<withdraw_successful>");
             printf("sending packet: %s\n",packet);
             printf("balance for %s is %u\n",user, hash_table_find(balance,user));
 
         }
-        encrypt(packet,key,encrypted);
-        bank_send(bank, encrypted, strlen(encrypted));
+        int out_size=0;
+        encrypt(packet,key,encrypted,&out_size);
+        bank_send(bank, encrypted, out_size);
         //free(user);
         //user=NULL;
     }
@@ -473,8 +469,9 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         printf("Looking for balance for %s  It is %u\n",user,bal);
         sprintf(packet,"<balance|%s|%u>",user,hash_table_find(balance,user));
         printf("sending packet: %s\n",packet);
-        encrypt(packet,key,encrypted);
-        bank_send(bank, encrypted, strlen(encrypted));
+        int out_size=0;
+        encrypt(packet,key,encrypted,&out_size);
+        bank_send(bank, encrypted, out_size);
 	free(user);
 	user=NULL;
     }
@@ -548,40 +545,48 @@ int all_digits(char *number){
     }
     return 1;
 }
-void encrypt(char *message,char*key,unsigned char*encrypted){
+void encrypt(char *message,char*key,unsigned char*encrypted,int *out_size){
     EVP_CIPHER_CTX ctx;
     memset(encrypted,'\0',10000);
     unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     EVP_CIPHER_CTX_init(&ctx);
     EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);
-    int len1;
+    int len1,tmplen;
     if(!EVP_EncryptUpdate(&ctx,encrypted,&len1,message,strlen(message))){
         printf("Encrypt Update Error\n");
     }
-    if(!EVP_EncryptFinal(&ctx,encrypted+len1,&len1)){
+    if(!EVP_EncryptFinal(&ctx,encrypted+len1,&tmplen)){
         printf("Encrypt Final Error\n");
     }
+    len1+=tmplen;
+    *out_size=len1;
     EVP_CIPHER_CTX_cleanup(&ctx);
 
 }
 
-void decrypt(unsigned char *message,char*key, unsigned char*decrypted){
+int decrypt(unsigned char *message,char*key, unsigned char*decrypted, int cipher_size){
+    //printf("ciphertext size if %d\n",cipher_size);
     EVP_CIPHER_CTX ctx;
+    int ret =1;
     memset(decrypted,'\0',10000);
     unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     EVP_CIPHER_CTX_init(&ctx);
     EVP_DecryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key, iv);
     int len1;
-    if(!EVP_DecryptUpdate(&ctx,decrypted,&len1,message,strlen(message))){
-        printf("Encrypt Update Error\n");
+    if(!EVP_DecryptUpdate(&ctx,decrypted,&len1,message,cipher_size)){
+        printf("Decrypt Update Error\n");
+        ret=0;
     }
     if(!EVP_DecryptFinal(&ctx,decrypted+len1,&len1)){
-        printf("Encrypt Final Error\n");
+        printf("Decrypt Final Error\n");
+        printf("%s\n",decrypted);
+        ret=0;
 
     }
     //char * mess=strtok(decrypted,"\n");
     //decrypted=mess;
     EVP_CIPHER_CTX_cleanup(&ctx);
+    return ret;
 }
 
 void generate_key(char *key){

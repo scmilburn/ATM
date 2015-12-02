@@ -28,6 +28,7 @@ int main(int argc,char*argv[])
         return 64;
     }
     fread(buffer,sizeof(buffer),32,file);
+    buffer[32]='\0';
 
     printf("atm file contents: %s\n",buffer);
  
@@ -46,6 +47,8 @@ int main(int argc,char*argv[])
         }
         
         //printf("IN ATM-MAIN COMMAND IS:: %s\n",user_input);
+        //puts(user_input);
+
         ans= atm_process_command(atm, user_input,buffer);
         
         //ans is the user starting a session
