@@ -160,7 +160,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 
                     FILE *card_file = fopen(card_name, "r");
                     if (!card_file){
-                        printf("Unable to access %s\'s card\n",user);
+                        printf("No such user\n");
                         return session_token;
                     }
                     
