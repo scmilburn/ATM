@@ -27,21 +27,21 @@ int main(int argc, char**argv)
     //memset(recvline,'\0',10000);
     //char user_input[1000];
     file=fopen(argv[1],"r");
-    if(file==0){
-        printf("Error opening bank initialization file\n");
+    char *split=strtok(argv[1],".");
+    split=strtok(NULL,".");
+    if(file==0 || strcmp(split,"bank")){
+        printf("Error opening ATM initialization file\n");
         return 64;
     }
+    
     fread(key,sizeof(key),32,file);
     printf("bank file contents: %s\n",key);
-    //List *users;
-    //HashTable *usr_bal;
-    //HashTable *usr_key;
     HashTable *users = hash_table_create(100);
     HashTable *balance = hash_table_create(100);     
     Bank *bank = bank_create();
-    bank->users = list_create();
-    bank->usr_key = hash_table_create(100);
-    bank->usr_bal = hash_table_create(100);
+    //bank->users = list_create();
+    //bank->usr_key = hash_table_create(100);
+    //bank->usr_bal = hash_table_create(100);
     printf("%s", prompt);
     fflush(stdout);
 
@@ -49,7 +49,7 @@ int main(int argc, char**argv)
     {
 	memset(decrypted,'\0',10000);
 	memset(recvline,'\0',10000);
-	memset(sendline,'\0',10000);
+	//memset(sendline,'\0',10000);
         fd_set fds;
         FD_ZERO(&fds);
         FD_SET(0, &fds);
@@ -57,20 +57,14 @@ int main(int argc, char**argv)
         select(bank->sockfd+1, &fds, NULL, NULL, NULL);
 
         if(FD_ISSET(0, &fds)){
-            //printf("listening for local commands only\n");
-            memset(recvline,'\0',10000);
             fgets(sendline, 10000,stdin);
             bank_process_local_command(bank, sendline, strlen(sendline),users,balance);
-            //printf("Users hash is now size: %d\n",hash_table_size(users));
-            //printf("Balance hash is now size: %d\n",hash_table_size(balance));
             printf("%s", prompt);
             fflush(stdout);
-        }else if(FD_ISSET(bank->sockfd, &fds)){
-            //memset(recvline,'\0',10000);
-            //memset(decrypted,'\0',10000);
+        }else if(FD_ISSET(bank->sockfd, &fds)){;
 	    int flag = 0;
 
-            n = bank_recv(bank, recvline, 1000);
+            n = bank_recv(bank, recvline, 10000);
 	    //if it can't decrypt properly then it should send a null packet back to the atm
             EVP_CIPHER_CTX ctx;
             int decrypt_len;
@@ -85,7 +79,7 @@ int main(int argc, char**argv)
             decrypt_len=len1;
             if(!EVP_DecryptFinal(&ctx,decrypted+len1,&len1)){
                 printf("Decrypt Final Error\n");
-		printf("%s\n",decrypted);
+		printf("not decrypted: %s\n",decrypted);
 		flag = 1;
 
             }
@@ -115,7 +109,7 @@ int main(int argc, char**argv)
     hash_table_free(balance);
     hash_table_free(users); //never executes
     bank_free(bank);
-    //fclose(argv[1]);
+    //fclose(file);
 
     return EXIT_SUCCESS;
 }

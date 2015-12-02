@@ -16,17 +16,20 @@ int main(int argc,char*argv[])
 {
     FILE *file;
     char user_input[10000];
-    //memset(user_input,'\0',1000);
+    memset(user_input,'\0',1000);
     char buffer[33];
     memset(buffer,'\0',33);
+    
     file=fopen(argv[1],"r");
-    if(file==0){
+    char *split=strtok(argv[1],".");
+    split=strtok(NULL,".");
+    if(file==0 || strcmp(split,"atm")){
         printf("Error opening ATM initialization file\n");
         return 64;
     }
     fread(buffer,sizeof(buffer),32,file);
 
-    //printf("atm file contents: %s\n",buffer);
+    printf("atm file contents: %s\n",buffer);
  
     ATM *atm = atm_create();
 

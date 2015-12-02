@@ -13,7 +13,7 @@ int main(int argc, char* argv[]){
     int n;
     time_t t;
     
-    if(argc!=2){
+    if(arg!=2){
         printf("Usage: init <filename>\n");
         return 62;
     }
@@ -31,21 +31,24 @@ int main(int argc, char* argv[]){
     if(bank_file == 0 && atm_file == 0){ //file does not exist
         if ((bank_file=fopen(bank_path,"w")) == NULL || (atm_file=fopen(atm_path,"w")) == NULL){
             printf("Error creating initialization files\n");
+            free(bank_path);
+            free(atm_path);  
             return 64;
         }
         
         //KEY GENERATION
-        char key[KEYLENGTH];
+        char key[KEYLENGTH+1];
+	memset(key,'\0',KEYLENGTH+1);
         const char charset[]="abcdefghijklmnopqrstuvwxyz"; 
         srand((unsigned)time(&t));
         for (n = 0; n < KEYLENGTH; n++){
             int k = rand() % 26;
             key[n]=charset[k];
         }
-        key[KEYLENGTH]='\0';
+        //key[KEYLENGTH]='\0';
 
         unsigned char iv[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-        printf("Private key generated is %s\n",key);        
+        //printf("Private key generated is %s\n",key);        
         fwrite(key,1,strlen(key),bank_file);
         fwrite(key,1,strlen(key),atm_file);
         //fwrite(iv,1,strlen(iv),bank_file);

@@ -11,8 +11,8 @@
 
 #define MAX_ARG1_LEN 11 //cmd
 #define MAX_ARG2_LEN 250 //usrname
-#define MAX_ARG3_LEN 10 //pin or amt
-#define MAX_ARG4_LEN 10 //unsigned int max 4294967295
+#define MAX_ARG3_LEN 5 //pin or amt
+#define MAX_ARG4_LEN 11 //unsigned int max 4294967295
 #define MAX_LINE_LEN 1000
 #define TRUE 1;
 #define FALSE 0;
@@ -92,18 +92,20 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 
     // null input
     if (strlen(arg1buff) < 1 || args_num==1){
-        //printf("Empty value\n");
+        
         printf("Invalid command\n");
         return;
     }
 
     //check if args are correct len
     if (strlen(arg1buff) > MAX_ARG1_LEN){
-        //printf("args too long\n");
+	//printf("HERE\n");
         printf("Invalid command\n");
         return;
     }else{
+	//memset(arg1,'\0',MAX_ARG1_LEN);
         strcpy(arg1, arg1buff);
+	//printf("\"%s\"\n",arg1);
     }      
 
     // MAIN BRANCHING BASED ON ARG1
@@ -112,7 +114,6 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
     //create-user <user-name> <pin> <balance>
 
     if (strcmp(arg1, "create-user") == 0){
-
         //printf("Initial users hash is size: %d\n",hash_table_size(users));
         if(args_num != 4){
             printf("Usage: create-user <user-name> <pin> <balance>\n");
@@ -132,7 +133,8 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }else{
-            strcpy(arg2, arg2buff);
+            //strncpy(arg2, arg2buff,strlen(arg2buff));
+	      strcpy(arg2, arg2buff);
         }
 
         //valid user name
@@ -155,23 +157,25 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }else{
-            strcpy(arg3, arg3buff);    
+            strncpy(arg3, arg3buff,strlen(arg3buff));
+	      //strcpy(arg3, arg3buff);
+	       
         } 
-
         //valid pin
         if(!valid_pin(arg3)){
             //printf("not valid pin\n");
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }
-
         //balance str max
         if (strlen(arg4buff) > MAX_ARG4_LEN){
             //printf("balance too large");
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
         }else{
-            strcpy(arg4, arg4buff);
+            strncpy(arg4, arg4buff,strlen(arg4buff));
+	      //strcpy(arg4, arg4buff);
+
         }
 
         //valid balance
@@ -220,6 +224,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 
             char* semi = strcat(arg2, ";");
             char* card = strcat(semi, arg3);
+	    printf("writing %s to card\n",card);
             unsigned char encrypted[10000];
             encrypt(card,key,encrypted);
 
@@ -523,6 +528,8 @@ int valid_balance(char *bal){
         return FALSE;
     }
     char *ptr;
+    //unsigned int64 u=atoui64(bal);
+    //puts(atoui64(bal));
     unsigned long num = strtoul(bal, &ptr, 10);
 
     if (num < 0 || num > UINT_MAX){
