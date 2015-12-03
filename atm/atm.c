@@ -6,6 +6,8 @@
 #include <regex.h>
 #include <openssl/evp.h>
 
+#define MAX_INT 2147483647;
+
 static const char session_token[250];
 unsigned char encrypted[10000];
 unsigned char decrypted[10000];
@@ -63,26 +65,30 @@ ssize_t atm_recv(ATM *atm, char *data, size_t max_data_len)
 
 char * atm_process_command(ATM *atm, char *command,char *key)
 {
-    char *str,*str1;
-    str=strtok(command,"\n");
+    char *str,*str1, *str2;
+    str2=strtok(command,"\n");
+    str=strtok(str2," ");
     char *packet = malloc(10000);
     memset(packet,'\0',10000);
 
     //balance	
     if(strcmp(str,"balance")==0){
+        str = strtok(NULL," ");
+	if(str != NULL){
+            printf("Usage: balance\n");
+            free(packet);
+            packet=NULL;
+            return session_token;
+        }
         if(!strcmp(session_token,"")){
             printf("No user logged in\n");
+	    free(packet);
+            packet=NULL;
+            return session_token;
         }else{
             sprintf(packet,"<balance|%s>",session_token);
             char recvline[10000];
-            /*if(!encrypt(packet,key,encrypted)){
-                printf("Usage: balance\n");
-                free(packet);
-                packet=NULL;
-                return session_token;
-            }*/
             printf("sending packet:%s\n",packet);
-
             char packet_contents[10000];
 	    memset(packet_contents,'\0',10000);
             send_and_recv(atm,packet,key,packet_contents);
@@ -100,17 +106,17 @@ char * atm_process_command(ATM *atm, char *command,char *key)
             }
             if(strcmp(comm,"balance")){
 		//printf("HERE1\n");
-                printf("Usage: balance\n");
+                printf("Balance packet error\n");
             }else{
                 comm=strtok(NULL,"|");
                 if(strcmp(comm,session_token)){
 		    //printf("HERE2\n");
-                    printf("Usage: balance\n");
+                    printf("Balance packet error\n");
                 }else{
                     comm=strtok(NULL,"|");
                     if(comm==NULL){
 			//printf("HERE3\n");
-                        printf("Usage: balance\n");
+                        printf("Balance packet error\n");
                     }else{
                         printf("$%s\n",comm);
                     }
@@ -119,12 +125,14 @@ char * atm_process_command(ATM *atm, char *command,char *key)
         }
         //end-session
     }else if(strcmp(str,"end-session")==0){
-        //check to see if too many arguments
+ //check to see if too many arguments
         str = strtok(NULL," ");
         if(str !=NULL){
-            printf("Invalid command\n");
+            printf("Usage: end-session\n");
+            free(packet);
+            packet=NULL;
+            return session_token;
         }
-        //printf("asking to end session\n");
         if(!strcmp(session_token,"")){
             printf("No user logged in\n");
         }else{
@@ -132,7 +140,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
             memset(session_token,'\0',250);
         }
     }else{
-	str1=strtok(str," ");
+	str1=str;
         //begin-session <username>
         if(strcmp(str1,"begin-session")==0){
             if(strcmp(session_token,"")){
@@ -140,52 +148,36 @@ char * atm_process_command(ATM *atm, char *command,char *key)
             }else{
                 str1 = strtok(NULL," ");
                 if(str1==NULL ){
-                    printf("Invalid command\n");
+                    printf("Usage: begin-session <user-name>\n");
                     free(packet);
                     packet=NULL;
                     return session_token;
-                }else{
-                    //check to see if too many arguments
+                }else if(strlen(str1)>250){
+		    printf("Usage: begin-session <user-name>\n");
+		    free(packet);
+                    packet=NULL;
+                    return session_token;
+		}else{
                     char *user = malloc(251);
                     memset(user,'\0',251);
-                    strncpy(user,str1,strlen(str1));////
+                    strncpy(user,str1,strlen(str1));
+		    if(!valid_user(str1)){
+			printf("Usage: begin-session <user-name>\n");
+			free(packet);
+                        packet=NULL;
+                        return session_token;
+		    }
                     str1 = strtok(NULL," ");
-                    
-                    //checking user exists before asking for pin
-                    int card_name_len = strlen(user) + strlen(".card") + 1;
-                    char card_name[card_name_len];
-                    memset(card_name, '\0', card_name_len);
-                    strncpy(card_name, user, strlen(user));
-                    strncat(card_name, ".card", strlen(".card"));
-
-                    FILE *card_file = fopen(card_name, "r");
-                    if (!card_file){
-                        printf("No such user\n");
-                        return session_token;
-                    }
-                    
+                  
                     if(str1 !=NULL){
-                        printf("Invalid command\n");
+                        printf("Usage: begin-session <user-name>\n");
                         free(packet);
                         packet=NULL;
                         return session_token;
                     }
-                    char sendline[10];
-                    int n;
-                    printf("PIN? ");
-                    fgets(sendline, 10,stdin);
-                    char *pin=strtok(sendline,"\n");	
-                    //check pin size and all digits
-                    if(strlen(sendline)!=4 || !all_digits(sendline)){
-                        printf("Not Authorized\n");
-                        free(packet);
-                        packet=NULL;
-                        return session_token;
-                    }
-
                     sprintf(packet,"<authentication|%s>",user);
                     printf("sending packet:%s\n",packet);
-                    if(authenticate(user, packet,atm,key,pin)){
+                    if(authenticate(user, packet,atm,key)){
                         strncpy(session_token,user,strlen(user));
                         printf("Authenticated\n");
                     }else{
@@ -204,20 +196,31 @@ char * atm_process_command(ATM *atm, char *command,char *key)
             }else{
                 str1 = strtok(NULL," ");
                 if(str1==NULL){
-                    printf("Invalid command\n");
+                    printf("Usage: withdraw <amt>\n");;
                 }else{
                     //check if digits and greater than or equal to zero
                     if(!all_digits(str1) || atoi(str1)< 0){
-                        printf("Usage: withdraw %s\n",str1);
+                        printf("Usage: withdraw <amt>\n");
                         free(packet);
                         packet=NULL;
                         return session_token;
                     }
+		    char *ptr;
+		    unsigned int tmp=strtoul(str1,&ptr,10);
+		    unsigned int max = 2147483647;
+		    printf("%lu\n",tmp);
+		    if(tmp > max){
+			printf("Usage: withdraw <amt>\n");
+			free(packet);
+                        packet=NULL;
+                        return session_token;
+		    }
+
 		    memset(packet,'\0',10000);
                     sprintf(packet,"<withdraw|%s|%s>",session_token,str1);
                     printf("sending packet:%s\n",packet);
                     if(atoi(str1) < 0){
-                        printf("Invalid command\n");
+                        printf("Usage: withdraw <amt>\n");
                     }else{
                         char parsed[10000];
 			memset(parsed,'\0',10000);
@@ -260,21 +263,48 @@ int all_digits(char *number){
 
 //authenticates the user by obtaining the key for the card file from the bank and then using it to decrypt the card file to check if the pin is correct
 
-int authenticate(char *user_name, char *packet, ATM *atm,char *key,char *user_pin){
+int authenticate(char *user_name, char *packet, ATM *atm,char *key){
     int ret=0;	
     FILE *card_file;
     size_t size_end;
     char *argcpy=malloc(250);
     memset(argcpy,'\0',250);
     strncpy(argcpy,user_name,strlen(user_name));
-    //puts(argcpy);
+//sending packet to see if user exists
+    char packet_contents[10000];
+    memset(packet_contents,'\0',10000);
+    send_and_recv(atm,packet,key,packet_contents);
+    if(packet_contents==NULL){
+        free(argcpy);
+        return 0;
+    }		
+    char *comm=strtok(packet_contents,"|");
+    if(comm==NULL){
+        free(argcpy);
+        return 0;
+    }
+    if(strcmp(comm,"authentication")){
+        free(argcpy);
+        return 0;
+    }
+    comm = strtok(NULL,"|");
+    if(comm == NULL){
+        free(argcpy);
+        return 0;
+    }
+    if(!strcmp(comm,"not found")){
+	printf("No such user\n");
+        free(argcpy);
+        return 0;
+    }
+//
     char *c = strcat(argcpy,".card");
     card_file=fopen(c,"r");
     if(!card_file){ //card file does not exist
-        printf("No such user\n");
+        printf("Unable to access %s\'s card\n",user_name);
         ret=0;
     }else{
-        //check size of card file
+//check size of card file
 	fseek(card_file,0L,SEEK_END);
    	size_end=ftell(card_file); //gets size of card file
     	fclose(card_file);
@@ -283,34 +313,19 @@ int authenticate(char *user_name, char *packet, ATM *atm,char *key,char *user_pi
         memset(buf,'\0',size_end);
         size_t bytes_read;
         bytes_read=fread(buf,size_end,1,card_file);	
-        char packet_contents[10000];
-	memset(packet_contents,'\0',10000);
-        send_and_recv(atm,packet,key,packet_contents);
-        if(packet_contents==NULL){
-            free(argcpy);
-            return 0;
-        }		
-        char *comm=strtok(packet_contents,"|");
-        if(comm==NULL){
-            free(argcpy);
-            return 0;
-        }
-        //printf("command is %s\n",comm);
-        if(strcmp(comm,"authentication")){
-            free(argcpy);
+//ask for pin
+	char sendline[10];
+        int n;
+        printf("PIN? ");
+        fgets(sendline, 10,stdin);
+        char *user_pin=strtok(sendline,"\n");	
+        //check pin size and all digits
+        if(strlen(sendline)!=4 || !all_digits(sendline)){
+	    free(argcpy);
             return 0;
         }
-        comm = strtok(NULL,"|");
-        if(comm == NULL){
-            free(argcpy);
-            return 0;
-        }
-        if(!strcmp(comm,"not found")){
-	    printf("No such user\n");
-            free(argcpy);
-            return 0;
-        }
-	//char 
+
+	 
         //decrypt card file with key
         char decrypt_card[10000];
         if(!decrypt(buf,comm,decrypt_card,size_end)){
@@ -395,13 +410,11 @@ int encrypt(char *message,char*key,unsigned char*encrypted,int *out_size){
     }
     len1+=tmplen;
     *out_size=len1;
-    //printf("outsize in encrypt() is %d\n",out_size);
     EVP_CIPHER_CTX_cleanup(&ctx);
     return ret;
 }
 
 int decrypt(unsigned char *message,char*key, unsigned char*decrypted, int cipher_size){
-    //printf("ciphertext size is %d\n",cipher_size);
     EVP_CIPHER_CTX ctx;
     int ret =1;
     memset(decrypted,'\0',10000);
@@ -419,10 +432,27 @@ int decrypt(unsigned char *message,char*key, unsigned char*decrypted, int cipher
         ret=0;
 
     }
-    //char * mess=strtok(decrypted,"\n");
-    //decrypted=mess;
     EVP_CIPHER_CTX_cleanup(&ctx);
     return ret;
+}
+
+int valid_user(char *user_name){
+    //have already check if null
+    if(!user_name){
+        return 0;
+    }
+
+    int i;
+    for (i = 0; i < strlen(user_name); i++){
+        int ascii=(int)user_name[i];
+        //printf("%d\n",ascii);
+        if(ascii < 65 || ascii > 122){
+            return 0;
+        }else if(ascii > 90 &&  ascii < 97){
+            return 0;
+        }
+    }
+    return 1;
 }
 
 
