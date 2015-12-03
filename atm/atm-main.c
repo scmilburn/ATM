@@ -30,7 +30,7 @@ int main(int argc,char*argv[])
     fread(buffer,sizeof(buffer),32,file);
     buffer[32]='\0';
 
-    printf("atm file contents: %s\n",buffer);
+    //printf("atm file contents: %s\n",buffer);
  
     ATM *atm = atm_create();
 

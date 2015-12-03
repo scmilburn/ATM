@@ -36,7 +36,7 @@
 	
 	fread(key,sizeof(key),32,file);
 	key[32]='\0';
-	printf("bank file contents: %s\n",key);
+	//printf("bank file contents: %s\n",key);
 	HashTable *users = hash_table_create(100);
 	HashTable *balance = hash_table_create(100);
 	Bank *bank = bank_create();
@@ -82,7 +82,7 @@
 	continue;
 	}
 	
-	printf("%s\n",decrypted);
+	//printf("%s\n",decrypted);
 	char * message=strtok(decrypted,"\n");
 	
 	bank_process_remote_command(bank, message, n, users,key,balance);

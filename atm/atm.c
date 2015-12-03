@@ -88,11 +88,11 @@ char * atm_process_command(ATM *atm, char *command,char *key)
         }else{
             sprintf(packet,"<balance|%s>",session_token);
             char recvline[10000];
-            printf("sending packet:%s\n",packet);
+            //printf("sending packet:%s\n",packet);
             char packet_contents[10000];
 	    memset(packet_contents,'\0',10000);
             send_and_recv(atm,packet,key,packet_contents);
-	    printf("packet_contents: \"%s\"\n",packet_contents);
+	    //printf("packet_contents: \"%s\"\n",packet_contents);
             if(packet_contents==NULL){
                 free(packet);
                 packet=NULL;
@@ -176,12 +176,12 @@ char * atm_process_command(ATM *atm, char *command,char *key)
                         return session_token;
                     }
                     sprintf(packet,"<authentication|%s>",user);
-                    printf("sending packet:%s\n",packet);
+                    //printf("sending packet:%s\n",packet);
                     if(authenticate(user, packet,atm,key)){
                         strncpy(session_token,user,strlen(user));
-                        printf("Authenticated\n");
+                        printf("Authorized\n");
                     }else{
-                        printf("Not Authorized\n");
+                        printf("Not authorized\n");
                     }
                     free(user);
                     user = NULL;
@@ -190,7 +190,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
             }
         //withdraw <amt>
         }else if(strcmp(str1,"withdraw")==0){
-            printf("asking to withdraw\n");
+            //printf("asking to withdraw\n");
             if(!strcmp(session_token,"")){
                 printf("No user logged in\n");
             }else{
@@ -208,7 +208,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 		    char *ptr;
 		    unsigned int tmp=strtoul(str1,&ptr,10);
 		    unsigned int max = 2147483647;
-		    printf("%lu\n",tmp);
+		    //printf("%lu\n",tmp);
 		    if(tmp > max){
 			printf("Usage: withdraw <amt>\n");
 			free(packet);
@@ -218,7 +218,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 
 		    memset(packet,'\0',10000);
                     sprintf(packet,"<withdraw|%s|%s>",session_token,str1);
-                    printf("sending packet:%s\n",packet);
+                    //printf("sending packet:%s\n",packet);
                     if(atoi(str1) < 0){
                         printf("Usage: withdraw <amt>\n");
                     }else{
@@ -371,7 +371,7 @@ void send_and_recv(ATM *atm, char *packet,char *key, char *result){
         result = NULL;
         return;
     }
-    printf("ATM recieved back %s\n",decrypted);
+    //printf("ATM recieved back %s\n",decrypted);
     parse_packet(decrypted,result);
 }
 

@@ -223,7 +223,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 	
 	char* semi = strcat(arg2, ";");
 	char* card = strcat(semi, arg3);
-	printf("writing %s to card\n",card);
+	//printf("writing %s to card\n",card);
 	unsigned char encrypted[10000];
 	int out_size =0;
 	encrypt(card,key,encrypted,&out_size);
@@ -231,10 +231,10 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 	fwrite(encrypted,1,out_size,card_file);
 	
 	//INSERTING INTO BANK
-	printf("Inserting \"%s\" => \"%s\"\n", user_name, key);
+	//printf("Inserting \"%s\" => \"%s\"\n", user_name, key);
 	//list_add(bank->users,user_name,key);
 	hash_table_add(users, user_name, key);
-	printf("Inserting \"%s\" => \"%u\"\n",user_name, (unsigned int)bal);
+	//printf("Inserting \"%s\" => \"%u\"\n",user_name, (unsigned int)bal);
 	hash_table_add(balance, user_name, (unsigned int)bal);
 	
 	printf("Created user %s\n", user_name);
@@ -310,7 +310,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 	}
 	
 	new_bal = amt + (long long)curr_bal;
-	printf("%lld\n", new_bal);
+	//printf("%lld\n", new_bal);
 	
 	char *user = malloc(251);
 	memset(user,'\0',251);
@@ -338,8 +338,8 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 	
 	hash_table_del(balance, user);
 	hash_table_add(balance, user, (unsigned int)new_bal);
-	printf("new_bal: %u\n", (unsigned int)new_bal);
-	printf("%s's balance is now %u\n", arg2, hash_table_find(balance, arg2));
+	//printf("new_bal: %u\n", (unsigned int)new_bal);
+	//printf("%u\n", arg2, hash_table_find(balance, arg2));
 	
 	printf("$%lld added to %s's account\n", amt, user);
 	//free(user);
@@ -376,9 +376,9 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 	
 	//RETRIEVE BALANCE
 	
-	printf("retrieving balance\n");
-	puts(arg2);
-	printf("%s's balance is now %u\n", arg2buff, hash_table_find(balance, user));
+	//printf("retrieving balance\n");
+	//puts(arg2);
+	printf("$%u\n", hash_table_find(balance, user));
 	free(user);
 	return;
 	}else{
@@ -395,17 +395,17 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
     char * packet = malloc(10000);
     memset(packet,'\0',10000);
 
-    printf("Received: %s\n",command);
+    //printf("Received: %s\n",command);
     //sprintf(sendline, "Bank got: %s", command);
 
     char *last = &command[strlen(command)-1];  //FIX THIS
-    if(!strcmp(last,">") && command[0]=='<'){
-        printf("This is a full packet\n");
-    }
+    //if(!strcmp(last,">") && command[0]=='<'){
+    //    printf("This is a full packet\n");
+    //}
     command=&command[1];
     char *rem_last= strtok(command,">");
     char *comm=strtok(rem_last,"|");
-    printf("the function is %s\n",comm);
+    //printf("the function is %s\n",comm);
 
     //authentication <authentication|"name">
     if (!strcmp(comm,"authentication")){
@@ -423,7 +423,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         }else{
             sprintf(packet,"<authentication|%s>",card_key);       
         }
-        printf("sending packet: %s\n",packet);
+        //printf("sending packet: %s\n",packet);
         int out_size=0;
         encrypt(packet,key,encrypted,&out_size);
         bank_send(bank, encrypted, out_size);
@@ -446,7 +446,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         }
         //printf("Withdrawing %s from %s\n",comm,user);
 
-        printf("balance for %s is %u\n",user, hash_table_find(balance,user));
+        //printf("balance for %s is %u\n",user, hash_table_find(balance,user));
 
         unsigned int val = malloc(sizeof(unsigned int));
         unsigned int tmp = (unsigned int)hash_table_find(balance,user);
@@ -454,15 +454,15 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         //unsigned int withdraw_amt=(unsigned int)temp;
         if(withdraw_amt < 0 || withdraw_amt > tmp){
             strcpy(packet,"<Insufficient funds>");
-            printf("sending packet: %s\n",packet);
+            //printf("sending packet: %s\n",packet);
         }else{
             val=tmp-withdraw_amt;
             //printf("The new val is %u\n",val);
             hash_table_del(balance,user);
             hash_table_add(balance,user,val);
             strcpy(packet,"<withdraw_successful>");
-            printf("sending packet: %s\n",packet);
-            printf("balance for %s is %u\n",user, hash_table_find(balance,user));
+            //printf("sending packet: %s\n",packet);
+            //printf("balance for %s is %u\n",user, hash_table_find(balance,user));
 
         }
         int out_size=0;
@@ -482,9 +482,9 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         memset(user,'\0',251);
         strncpy(user,comm,strlen(comm));
         unsigned int *bal = hash_table_find(balance,user);
-        printf("Looking for balance for %s  It is %u\n",user,bal);
+        //printf("Looking for balance for %s  It is %u\n",user,bal);
         sprintf(packet,"<balance|%s|%u>",user,hash_table_find(balance,user));
-        printf("sending packet: %s\n",packet);
+        //printf("sending packet: %s\n",packet);
         int out_size=0;
         encrypt(packet,key,encrypted,&out_size);
         bank_send(bank, encrypted, out_size);

@@ -13,7 +13,7 @@ int main(int argc, char* argv[]){
     int n;
     time_t t;
     
-    if(arg!=2){
+    if(argc!=2){
         printf("Usage: init <filename>\n");
         return 62;
     }
