@@ -415,7 +415,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         }
         //printf("asking for authentification for %s\n",comm);
         char* card_key = hash_table_find(users, comm);
-        printf("The card_key for %s is %s\n",comm,card_key);
+        //printf("The card_key for %s is %s\n",comm,card_key);
         if(card_key==NULL){
             //printf("key not found\n");
             char *str="<authentication|not found>";
