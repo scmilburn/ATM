@@ -30,7 +30,7 @@ int main(int argc,char*argv[])
     fread(buffer,sizeof(buffer),32,file);
     buffer[32]='\0';
 
-    printf("atm file contents: %s\n",buffer);
+    //printf("atm file contents: %s\n",buffer);
  
     ATM *atm = atm_create();
 
@@ -46,14 +46,7 @@ int main(int argc,char*argv[])
             continue;
         }
         
-        //printf("IN ATM-MAIN COMMAND IS:: %s\n",user_input);
-        //puts(user_input);
-
         ans= atm_process_command(atm, user_input,buffer);
-        
-        //ans is the user starting a session
-        
-        //printf("answer is %s\n",ans);
 	
         if(!strcmp(ans,"")){
             printf("%s", prompt);
@@ -63,7 +56,7 @@ int main(int argc,char*argv[])
         fflush(stdout);
 	
     }
-    //puts(fgets(user_input, 1000,stdin));
+
     atm_free(atm);
     return 0;
 }

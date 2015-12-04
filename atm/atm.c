@@ -35,9 +35,6 @@ ATM* atm_create()
     atm->atm_addr.sin_port = htons(ATM_PORT);
     bind(atm->sockfd,(struct sockaddr *)&atm->atm_addr,sizeof(atm->atm_addr));
 
-    // Set up the protocol state
-    // TODO set up more, as needed
-
     return atm;
 }
 
@@ -88,11 +85,10 @@ char * atm_process_command(ATM *atm, char *command,char *key)
         }else{
             sprintf(packet,"<balance|%s>",session_token);
             char recvline[10000];
-            printf("sending packet:%s\n",packet);
+            //printf("sending packet:%s\n",packet);
             char packet_contents[10000];
 	    memset(packet_contents,'\0',10000);
             send_and_recv(atm,packet,key,packet_contents);
-	    printf("packet_contents: \"%s\"\n",packet_contents);
             if(packet_contents==NULL){
                 free(packet);
                 packet=NULL;
@@ -105,18 +101,15 @@ char * atm_process_command(ATM *atm, char *command,char *key)
                 return session_token;
             }
             if(strcmp(comm,"balance")){
-		//printf("HERE1\n");
-                printf("Balance packet error\n");
+                printf("Invalid Packet\n");
             }else{
                 comm=strtok(NULL,"|");
                 if(strcmp(comm,session_token)){
-		    //printf("HERE2\n");
-                    printf("Balance packet error\n");
+                    printf("Invalid Packet\n");
                 }else{
                     comm=strtok(NULL,"|");
                     if(comm==NULL){
-			//printf("HERE3\n");
-                        printf("Balance packet error\n");
+                        printf("Invalid Packet\n");
                     }else{
                         printf("$%s\n",comm);
                     }
@@ -176,7 +169,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
                         return session_token;
                     }
                     sprintf(packet,"<authentication|%s>",user);
-                    printf("sending packet:%s\n",packet);
+                    //printf("sending packet:%s\n",packet);
                     if(authenticate(user, packet,atm,key)){
                         strncpy(session_token,user,strlen(user));
                         printf("Authenticated\n");
@@ -190,7 +183,6 @@ char * atm_process_command(ATM *atm, char *command,char *key)
             }
         //withdraw <amt>
         }else if(strcmp(str1,"withdraw")==0){
-            printf("asking to withdraw\n");
             if(!strcmp(session_token,"")){
                 printf("No user logged in\n");
             }else{
@@ -207,8 +199,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
                     }
 		    char *ptr;
 		    unsigned int tmp=strtoul(str1,&ptr,10);
-		    unsigned int max = 2147483647;
-		    printf("%lu\n",tmp);
+		    unsigned int max = 2147483647; //max size of int
 		    if(tmp > max){
 			printf("Usage: withdraw <amt>\n");
 			free(packet);
@@ -218,7 +209,7 @@ char * atm_process_command(ATM *atm, char *command,char *key)
 
 		    memset(packet,'\0',10000);
                     sprintf(packet,"<withdraw|%s|%s>",session_token,str1);
-                    printf("sending packet:%s\n",packet);
+                    //printf("sending packet:%s\n",packet);
                     if(atoi(str1) < 0){
                         printf("Usage: withdraw <amt>\n");
                     }else{
@@ -329,7 +320,7 @@ int authenticate(char *user_name, char *packet, ATM *atm,char *key){
         //decrypt card file with key
         char decrypt_card[10000];
         if(!decrypt(buf,comm,decrypt_card,size_end)){
-	    printf("Decrypt Error in decrypting card file\n");
+	    printf("Invalid Packet\n");
             free(argcpy);
             return 0;
         }
@@ -371,7 +362,7 @@ void send_and_recv(ATM *atm, char *packet,char *key, char *result){
         result = NULL;
         return;
     }
-    printf("ATM recieved back %s\n",decrypted);
+    //printf("ATM recieved back %s\n",decrypted);
     parse_packet(decrypted,result);
 }
 
@@ -387,7 +378,6 @@ void parse_packet(char *packet, char *temp){
         temp[i-1]=parse[i];	
         i++;	
     }
-    //printf("packet contents: %s\n",t);
     temp[i-1]='\0';
 
 }
@@ -428,7 +418,6 @@ int decrypt(unsigned char *message,char*key, unsigned char*decrypted, int cipher
     }
     if(!EVP_DecryptFinal(&ctx,decrypted+len1,&len1)){
         printf("Decrypt Final Error\n");
-        printf("%s\n",decrypted);
         ret=0;
 
     }
@@ -445,7 +434,6 @@ int valid_user(char *user_name){
     int i;
     for (i = 0; i < strlen(user_name); i++){
         int ascii=(int)user_name[i];
-        //printf("%d\n",ascii);
         if(ascii < 65 || ascii > 122){
             return 0;
         }else if(ascii > 90 &&  ascii < 97){

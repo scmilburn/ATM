@@ -36,13 +36,10 @@
 	
 	fread(key,sizeof(key),32,file);
 	key[32]='\0';
-	printf("bank file contents: %s\n",key);
+	//printf("bank file contents: %s\n",key);
 	HashTable *users = hash_table_create(100);
 	HashTable *balance = hash_table_create(100);
 	Bank *bank = bank_create();
-	//bank->users = list_create();
-	//bank->usr_key = hash_table_create(100);
-	//bank->usr_bal = hash_table_create(100);
 	printf("%s", prompt);
 	fflush(stdout);
 	
@@ -50,7 +47,6 @@
 	{
 	memset(decrypted,'\0',10000);
 	memset(recvline,'\0',10000);
-	//memset(sendline,'\0',10000);
 	fd_set fds;
 	FD_ZERO(&fds);
 	FD_SET(0, &fds);
@@ -62,14 +58,9 @@
 	bank_process_local_command(bank, sendline, strlen(sendline),users,balance);
 	printf("%s", prompt);
 	fflush(stdout);
-	}else if(FD_ISSET(bank->sockfd, &fds)){;
-	//int flag = 0;
-	
+	}else if(FD_ISSET(bank->sockfd, &fds)){;	
 	n = bank_recv(bank, recvline, 10000);
 
-
-        //int flag=decrypt(recvline,key,decrypted,n);
-	
 	if(!decrypt(recvline,key,decrypted,n)){ //this means that it has not been decrypted correctly so it will return a null packet
 	unsigned char encrypted[10000];
 	char packet[10000];
@@ -82,16 +73,15 @@
 	continue;
 	}
 	
-	printf("%s\n",decrypted);
+	//printf("%s\n",decrypted);
 	char * message=strtok(decrypted,"\n");
 	
 	bank_process_remote_command(bank, message, n, users,key,balance);
 	
-	printf("%s", prompt);
-	fflush(stdout);
+	//printf("%s", prompt);
+	//fflush(stdout);
 	}
 	
-	//printf("bob's balance is now %u\n",hash_table_find(balance,"bob"));
 	}
 	hash_table_free(balance);
 	hash_table_free(users); //never executes

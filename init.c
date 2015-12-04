@@ -38,7 +38,6 @@ int main(int argc, char* argv[]){
         
         //KEY GENERATION
         char key[KEYLENGTH];
-	//memset(key,'\0',KEYLENGTH);
         const char charset[]="abcdefghijklmnopqrstuvwxyz"; 
         srand((unsigned)time(&t));
         for (n = 0; n < KEYLENGTH; n++){
@@ -53,7 +52,6 @@ int main(int argc, char* argv[]){
         fwrite(key,1,strlen(key),atm_file);
         fclose(atm_file);
         fclose(bank_file);
-        //printf("file does not exist: Good\n");
         free(bank_path);
         free(atm_path);
 
