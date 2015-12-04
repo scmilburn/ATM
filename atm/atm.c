@@ -191,7 +191,8 @@ char * atm_process_command(ATM *atm, char *command,char *key, HashTable *tries)
                             //printf("num of tries: %d\n", num);
                         }
                     }else{
-                        printf("%s's account is currently locked. Please contact the bank to unlock it\n");
+                        printf("%s's account is currently locked because of too many attempts.\n");
+
                     }
                     free(user);
                     user = NULL;
