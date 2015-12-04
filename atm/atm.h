@@ -15,6 +15,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdio.h>
+#include "hash_table.h"
 
 typedef struct _ATM
 {
@@ -31,8 +32,8 @@ ATM* atm_create();
 void atm_free(ATM *atm);
 ssize_t atm_send(ATM *atm, char *data, size_t data_len);
 ssize_t atm_recv(ATM *atm, char *data, size_t max_data_len);
-char * atm_process_command(ATM *atm, char *command,char *key);
-int authenticate(char *user_name, char *packet, ATM *atm,char *key);
+char * atm_process_command(ATM *atm, char *command,char *key, HashTable *tries);
+int authenticate(char *user_name, char *packet, ATM *atm,char *key, HashTable *tries);
 int encrypt(char *message,char*key,unsigned char*encrypted,int *out_size);
 int decrypt(unsigned char *message,char*key, unsigned char*decrypted,int n);
 void parse_packet(char *packet, char *temp);

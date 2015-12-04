@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <hash_table.h>
 
 static const char prompt[] = "ATM: ";
 
@@ -31,7 +32,9 @@ int main(int argc,char*argv[])
     buffer[32]='\0';
 
     //printf("atm file contents: %s\n",buffer);
- 
+    
+    HashTable *tries = hash_table_create(100);
+
     ATM *atm = atm_create();
 
     printf("%s", prompt);
@@ -46,8 +49,8 @@ int main(int argc,char*argv[])
             continue;
         }
         
-        ans= atm_process_command(atm, user_input,buffer);
-	
+        ans= atm_process_command(atm, user_input,buffer, tries);
+        
         if(!strcmp(ans,"")){
             printf("%s", prompt);
         }else{
@@ -56,7 +59,7 @@ int main(int argc,char*argv[])
         fflush(stdout);
 	
     }
-
+    hash_table_free(tries);
     atm_free(atm);
     return 0;
 }

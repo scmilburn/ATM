@@ -331,8 +331,9 @@ void bank_process_local_command(Bank *bank, char *command, size_t len, HashTable
 	}
 	
 	//RETRIEVE BALANCE
-	
-        printf("$%u\n",hash_table_find(balance, user));
+
+	printf("$%u\n", hash_table_find(balance, user));
+
 	free(user);
 	return;
 	}else{
@@ -349,13 +350,10 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
     char * packet = malloc(10000);
     memset(packet,'\0',10000);
 
-    //printf("Received: %s\n",command);
-    //sprintf(sendline, "Bank got: %s", command);
-
-    char *last = &command[strlen(command)-1]; 
-    if(!strcmp(last,">") && command[0]=='<'){
-        //printf("This is a full packet\n");
-    }
+    char *last = &command[strlen(command)-1];  //FIX THIS
+    //if(!strcmp(last,">") && command[0]=='<'){
+    //    printf("This is a full packet\n");
+    //}
     command=&command[1];
     char *rem_last= strtok(command,">");
     char *comm=strtok(rem_last,"|");
@@ -394,8 +392,6 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
             printf("Invalid Packet\n");
         }
 
-        //printf("balance for %s is %u\n",user, hash_table_find(balance,user));
-
         unsigned int val = malloc(sizeof(unsigned int));
         unsigned int tmp = (unsigned int)hash_table_find(balance,user);
         unsigned int withdraw_amt=atol(comm);
@@ -408,7 +404,6 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
             hash_table_add(balance,user,val);
             strcpy(packet,"<withdraw_successful>");
             //printf("sending packet: %s\n",packet);
-            //printf("balance for %s is %u\n",user, hash_table_find(balance,user));
 
         }
         int out_size=0;
@@ -425,7 +420,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
         char *user = malloc(251);
         memset(user,'\0',251);
         strncpy(user,comm,strlen(comm));
-        //unsigned int *bal = hash_table_find(balance,user);
+
         sprintf(packet,"<balance|%s|%u>",user,hash_table_find(balance,user));
         int out_size=0;
         encrypt(packet,key,encrypted,&out_size);

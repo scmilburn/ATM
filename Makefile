@@ -8,7 +8,7 @@ bin/init : init.c
 	${CC} ${CFLAGS} init.c -o bin/init
 
 bin/atm : atm/atm-main.c atm/atm.c
-	${CC} ${CFLAGS} atm/atm.c atm/atm-main.c -o bin/atm ${LIBS}
+	${CC} ${CFLAGS} atm/atm.c atm/atm-main.c util/hash_table.c util/list.c -o bin/atm ${LIBS}
 
 bin/bank : bank/bank-main.c bank/bank.c 
 	${CC} ${CFLAGS} bank/bank.c bank/bank-main.c util/hash_table.c util/list.c -o bin/bank ${LIBS}
