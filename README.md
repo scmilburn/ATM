@@ -18,7 +18,7 @@ Maximum user-name length is 250 characters. Maximum balance is UINT\_MAX. Maximu
 `make`<br/>
 
 creates .atm and .bank files containing private keys<br/>
-`bin/init <filename>`<br/>
+`bin/init <init_filename>`<br/>
 `bin/bank <init_filename>.bank`<br/>
 `bin/atm <init_filename>.atm`<br/>
 `bin/router`<br/>
