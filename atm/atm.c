@@ -9,7 +9,6 @@
 
 #define MAX_INT 2147483647;
 
-static int tries = 0;
 static const char session_token[250];
 unsigned char encrypted[10000];
 unsigned char decrypted[10000];
@@ -86,7 +85,7 @@ char * atm_process_command(ATM *atm, char *command,char *key, HashTable *tries)
             return session_token;
         }else{
             sprintf(packet,"<balance|%s>",session_token);
-            char recvline[10000];
+            //char recvline[10000];
             //printf("sending packet:%s\n",packet);
             char packet_contents[10000];
             memset(packet_contents,'\0',10000);
@@ -173,15 +172,17 @@ char * atm_process_command(ATM *atm, char *command,char *key, HashTable *tries)
                     }
                     sprintf(packet,"<authentication|%s>",user);
                     //printf("sending packet:%s\n",packet);
+                    int ans;
 
                     if (hash_table_find(tries, user) < 3){
-                        if(authenticate(user, packet,atm,key, tries)){
+                        ans = authenticate(user, packet,atm,key, tries);
+                        if(ans == 1){
                             strncpy(session_token,user,strlen(user));
                             printf("Authorized\n");
                             hash_table_del(tries, user);
                             hash_table_add(tries, user, 0);
                             //printf("num of tries: %d\n", 0);
-                        }else{
+                        }else if (ans == 0){
                             printf("Not authorized\n");
 
                             int num;
@@ -191,7 +192,7 @@ char * atm_process_command(ATM *atm, char *command,char *key, HashTable *tries)
                             //printf("num of tries: %d\n", num);
                         }
                     }else{
-                        printf("%s's account is currently locked because of too many attempts.\n");
+                        printf("%s's account is currently locked because of too many attempts.\n", user);
 
                     }
                     free(user);
@@ -304,7 +305,7 @@ int authenticate(char *user_name, char *packet, ATM *atm,char *key, HashTable *t
     if(!strcmp(comm,"not found")){
         printf("No such user\n");
         free(argcpy);
-        return 0;
+        return 2;
     }
     //
     char *c = strcat(argcpy,".card");
@@ -394,7 +395,7 @@ void parse_packet(char *packet, char *temp){
     char *parse=strtok(packet,"\n");
     //char t[100];
     int i=1;
-    int flag=0;
+    //int flag=0;
     while(parse[i]!='>' && i<strlen(parse)){
         temp[i-1]=parse[i];	
         i++;	

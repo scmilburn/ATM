@@ -350,7 +350,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len, HashTabl
     char * packet = malloc(10000);
     memset(packet,'\0',10000);
 
-    char *last = &command[strlen(command)-1];  //FIX THIS
+    //char *last = &command[strlen(command)-1];  //FIX THIS
     //if(!strcmp(last,">") && command[0]=='<'){
     //    printf("This is a full packet\n");
     //}
