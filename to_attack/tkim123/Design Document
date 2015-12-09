@@ -1,0 +1,56 @@
+Timothy Kim and Darren Tong
+CMSC414 0201
+
+1)Overall Protocol
+
+init -> 
+The init function is responsibile for generating the .bank and .atm files. After we create these files, we generate a random 50 character string that we will use as a symmetric key. This key is then written to the .bank and .atm files.
+
+ATM and bank->
+The ATM communicates with the bank using three main commands: validate, withdraw, and balance. We call each of these commands an "interaction." The ATM and bank rely heavily on our implementation of what we call an "Interaction ID." When the ATM needs to perform an interaction with the bank, the bank creates a new interaction ID and sends it to the ATM. As mentioned before, both the bank and ATM have access to a symmetric key that will be unknown to attackers. Both the bank and the ATM need the interaction ID because it will be used as the IV for all encryption and decryption operations that are required to complete the interaction. For our project we used AES 256 CBC encryption via the OpenSSL C library. 
+
+The same following actions occurs whenever ATM recieves either a valid begin-session, withdraw, or balance from the user:
+
+1) ATM pings request to bank for an interaction ID
+2) Bank recieves ping and generates ID. ID gets saved in a local variable and sent back to the ATM through the router
+3) ATM recieves the interaction ID and stores it in a local variable
+
+After this point, each interaction is handled differently, but all interactions involve sending and recieving encrypted data through the router. Depending on what operation the user wanted, ATM generates a string "validate <username>", "pin <username>", "withdraw <username> <amt>", or "balance <username>." This string is encrypted using the shared symmetric key and the interaction ID as the IV. The encrypted ciphertext is then sent over to the bank, where it handles the respective operations. When the bank recieves the ciphertext, it uses the shared key and the same temporary interaction ID to convert the operation to plaintext. The bank determines an appropriate response and then the same encryption/decryption occurs vice versa. Once the operation is completed, the both the Bank and atm process_command functions return and the ATM waits for another command.
+
+The reason that we decided to encrypt the operation name, as well as the response, is to protect the confidentiality of the user. It is also important to note that it is completely fine if the attacker knows the interaction ID that gets sent prior to every operation, as long as the attacker does not have access to the symmetric key. The random IV ensures that two identical operations will create different sets of encryptions. This prevents an attacker from duplicating a request by simply resending a ciphertext from a previous interaction. Our use of an interaction ID also implies integrity in our interactions. If the attacker modifies the ID that gets sent to the ATM, the bank and the ATM will not be able to communicate. The bank will not be able to decipher the ATM's messages because it is encrypted using a different IV. It will either cause an error when decrypting or display gibberish. In either one of these cases, all operations will stop and the ATM will wait on another command to process. 
+
+The interaction ID also indirectly implies authenticity as well. A large issue we faced in this project is how we would determine if a message is sent by the Bank/atm, or if it is sent by the attacker via the router. Our design structure ensures authenticity because an attacker cannot forge a meaningful message to either the bank or atm without the key. 
+
+.card->
+When the bank creates a user, it generates a .card file for that user. Inside of this .card file, it puts a 16 digit ATM-card number that it randomly generates. It also stores the number in a hash table in the bank object, associated with the user. Before a user enters his/pin, we check the contents of the .card file and compare it with the number we have stored in the hash table. We did this so that if an attacker knows a user's pin number, the attacker can not access his/her account by simply having an empty "dummy" card. We had originally planned to encrypt the .card file in some way but the project specs stated that the attacker could read/modify/delete/add these files. We figured that an attacker could just as easily copy over encrypted data as he could do regular data from the card files to "duplicate" these cards. We do however, prevent an attacker from accessing a user's account with any random file that has "<username>.card" as its filename
+
+*We made an assumption that we could safely store the contents of .atm and .bank files in memory since attacker doesn't have direct access to files themselves, and the attacker cannot look in memory for sensitive info. It was a lot easier than having to read from the files each time we wanted to retrieve the symmetric key.
+
+2) Attacks and Defenses
+
+-Buffer overflow attack
+There are a multitude of sections in our program that depend on either reading in commands from stdin or reading from a file. With the exception of reading from the .bank and .atm files (which were told was completely safe), we took measures to prevent buffer overflow attacks. We used safer string functions such as "strncat" and "strncpy" over their original counterparts so that we could limit how many bytes are copied or concatinated. This also allowed us to ensure a null terminator at the end of every new string we created. Wherever we recieved input, we made sure to add a null terminator for safe measures. We also did this when deciphering ciphertext sent through the router in case an attacker decided to perform a buffer overflow attack through the router.
+
+-If attacker has Bob's card, but not his pin.
+Bob's pin number input is encrypted when it is sent through the router so that an attacker inspecting packets from the router would not be able to deduce his actual pin. The attacker's only option will be to brute force a way into Bob's account. We prevented this by implementing a lockout system that would block Bob's account after 3 unsuccessful pin attempts. The lockout system is implemented in the bank program rather than the ATM program so that the attacker cannot try multiple times at different ATMs.
+
+-If the attacker has Bob's pin but not his card
+As mentioned before, we assumed that the attacker could not "duplicate" the card files. If this were true, attacker could easily duplicate the contents of the card file whether it was encrypted or not. We assumed that if both the .card files and the pin number were correct, then the user would be valid. If the attacker only had Bob's pin, the attacker would not necessarily have access to the 16 digit number on the card. Even if the attacker created a card with empty or wrong information inside of it, the bank would see that the card's information does not match the information in its database and would deny access to the account.
+
+-Attacker attempts to observe packets through the router in order to discover sensitive information about the user:
+The obvious reason that our code will ensure privacy during transactions is because our messages will be encrypted. However, we also ensure that even a skillful attacker is unable to decrypt our messages. The project allowed us to assume that the .bank and .atm files were untouchable by the attacker, so this is where we placed our randomly generated symmetric key created from the init file. One thing to note is that before any interaction (balance, withdraw, etc.), the bank sends the ATM an Interaction ID that will be used as an IV for encryption. It is fine if the attacker sees this IV because without the symmetric key the attacker cannot encrypt/decrypt interactions between the bank and ATM.
+
+-Attacker attempts to duplicate an interacion that that ATM has with the Bank:
+By observing the packets sent through the router, the attacker could theoretically duplicate an interaction that Bob has with the bank. For instance, if the ATM sends a request to withdraw $10 from Bob's bank account, the attacker could resend those same packets to constantly withdraw $10. This attack is prevented by the use of symmetric keys unobtainable by the user. The attacker only has access to our encrypted messages and the Interaction ID which we use as and IV for the encryption. Although the attacker could resend the packets used the complete a "withdraw 10 from Bob's account" command, the attacker will have not have the proper key to encrpy or decrypt the messages. The Bank or ATM code will either recieve a failed decrypion, or gibberish - both of which lead to a nonevent.
+
+-Attacker attempts to modify an interaction that the ATM has with the Bank:
+We wanted to prevent an attacker from changing any commands sent to the Bank by the ATM. For example, if the ATM sends a request to withdraw $10 from Bob's account, we did not want the attacker to modify the request to end up withdrawing $100. This was also prevented through the use of an unobtainable symmetric key. It is completely fine if the Interaction ID is known by the attacker because it is simply used as an IV for our encryption. The messages that get sent through the router will be encrypted ciphertext, which the attacker is free to modify. However, any modifications to the ciphertext will lead to a failure or gibberish when decrypted. I these cases, nothing will happen.
+
+-Attacker modifies the Interaction ID before it reaches the ATM to break code:
+As mentioned before, and Interaction ID is created and by the bank and sent to the ATM at the start of each interaction to be used as an IV. This ID is not encrypted in any way, and the attacker can easily modify it to be whatever it wants. However, if the IV used by the bank and the ATM differs, there will be problems when encrypting and decrypting messages between the two programs. They both look for very distinct messages when interacting with each other, and any differences or errors when decrypting will lead to a nonevent.
+
+3) Potential vulnerabilities:
+
+The security of our code pretty much depends entirely on the abstraction of the symmetric key from any potential attacker. However, because the people in part 2 will have access to our source code, they will know exactly how this random key is generated when init is run. We were told the attacker could not use gdb to recover information in the specs, so we chose to ignore this vulnerability. Regardless, the attacker could find the value of the variable that holds the key before it is placed into the files. If they have that key, they can decrypt messages as well as encrypt their own ones.
+
+An attacker could also modify the IV that gets sent to the ATM in a way that potentially leaks information about the key. For instance, an expert attacker may be able to deduce the key by using incementing IV's. We did not know if this was even entirely possible, but a nonrandom IV did seem dangrous. We chose to ignore it we did not expect any of the students to find the key this way.
